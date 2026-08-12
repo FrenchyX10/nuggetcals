@@ -1,0 +1,21 @@
+{
+  "name": "NuggetCals",
+  "short_name": "NuggetCals",
+  "description": "Snap a meal photo and get calorie estimates.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#120e0b",
+  "theme_color": "#120e0b",
+  "icons": [
+    {
+      "src": "/nugget.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "/nugget.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}
