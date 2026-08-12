@@ -436,6 +436,43 @@ input {
   color: var(--muted);
 }
 
+.plan-bar {
+  height: 9px;
+  overflow: hidden;
+  margin-bottom: 10px;
+  border-radius: 999px;
+  background: rgba(246, 236, 220, 0.08);
+}
+
+.plan-bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--gold), var(--crisp));
+}
+
+.plan-bar i.is-over {
+  background: #ff7a62;
+}
+
+.plan-left {
+  margin: 0 0 14px;
+  color: var(--gold-2);
+  font-size: 0.92rem;
+}
+
+.plan-left.is-over {
+  color: #ffb4a2;
+}
+
+.plan-chips {
+  margin-bottom: 12px;
+}
+
+.plan-custom {
+  margin-top: 8px;
+}
+
 .mini-macros span,
 .meta-row span {
   border: 1px solid var(--line);

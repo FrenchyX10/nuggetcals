@@ -14,6 +14,7 @@ import { analyzeFree, mealFromRecord, suggestAlternatives } from "@/lib/free-ana
 import { inspectMealPhoto } from "@/lib/local-vision";
 import { prepareImage } from "@/lib/image";
 import { confidenceLabel, grams, kcal, methodLabel } from "@/lib/format";
+import { DAILY_PLANS, loadPlan, savePlan } from "@/lib/plan";
 import type { FoodRecord } from "@/lib/nutrition-data";
 import type { MealAnalysis } from "@/lib/schema";
 
@@ -74,9 +75,14 @@ export function BitewiseApp() {
   const [meal, setMeal] = useState<MealAnalysis | null>(null);
   const [entryId, setEntryId] = useState<string | null>(null);
   const [servings, setServings] = useState(1);
+  const [planId, setPlanId] = useState("maintain");
+  const [planCalories, setPlanCalories] = useState(2000);
 
   useEffect(() => {
     setHistory(loadHistory());
+    const plan = loadPlan();
+    setPlanId(plan.id);
+    setPlanCalories(plan.calories);
   }, []);
 
   useEffect(() => {
@@ -88,8 +94,16 @@ export function BitewiseApp() {
   }, [busy]);
 
   const today = useMemo(() => todayTotals(history), [history]);
+  const remaining = planCalories - today.calories;
+  const usedShare = Math.min(1, today.calories / Math.max(planCalories, 1));
   const activeEntry = history.find((item) => item.id === entryId) ?? null;
   const scale = activeEntry?.servings ?? servings;
+
+  function choosePlan(id: string, calories: number) {
+    setPlanId(id);
+    setPlanCalories(calories);
+    savePlan(id, calories);
+  }
 
   async function onFile(file: File | undefined) {
     if (!file) return;
@@ -233,7 +247,9 @@ export function BitewiseApp() {
         </nav>
         <div className="today-pill">
           <span>Today</span>
-          <strong>{kcal(today.calories)} kcal</strong>
+          <strong>
+            {kcal(today.calories)} / {kcal(planCalories)}
+          </strong>
         </div>
       </header>
 
@@ -401,9 +417,62 @@ export function BitewiseApp() {
 
           <aside className="side">
             <div className="stat-card" id="log">
-              <p className="card-kicker">Logged today</p>
+              <p className="card-kicker">Daily plan</p>
               <p className="stat-number">{kcal(today.calories)}</p>
-              <p className="stat-unit">kcal from {today.count} scan{today.count === 1 ? "" : "s"}</p>
+              <p className="stat-unit">
+                of {kcal(planCalories)} kcal · {today.count} scan
+                {today.count === 1 ? "" : "s"}
+              </p>
+              <div className="plan-bar" aria-hidden>
+                <i
+                  className={remaining < 0 ? "is-over" : ""}
+                  style={{ width: `${Math.max(6, usedShare * 100)}%` }}
+                />
+              </div>
+              <p className={remaining < 0 ? "plan-left is-over" : "plan-left"}>
+                {remaining >= 0
+                  ? `${kcal(remaining)} kcal left today`
+                  : `${kcal(Math.abs(remaining))} kcal over plan`}
+              </p>
+              <div className="chips plan-chips" aria-label="Daily calorie plan">
+                {DAILY_PLANS.map((plan) => (
+                  <button
+                    key={plan.id}
+                    type="button"
+                    className={planId === plan.id ? "chip is-on" : "chip"}
+                    onClick={() =>
+                      choosePlan(
+                        plan.id,
+                        plan.id === "custom" ? planCalories : plan.calories,
+                      )
+                    }
+                  >
+                    {plan.label}
+                    <em> {plan.id === "custom" ? kcal(planCalories) : kcal(plan.calories)}</em>
+                  </button>
+                ))}
+              </div>
+              {planId === "custom" ? (
+                <label className="field plan-custom">
+                  <span>Custom daily calories</span>
+                  <input
+                    type="number"
+                    min={800}
+                    max={6000}
+                    step={50}
+                    value={planCalories}
+                    onChange={(event) => {
+                      const value = Number(event.target.value);
+                      const next = Number.isFinite(value) ? value : 2000;
+                      choosePlan("custom", next);
+                    }}
+                  />
+                </label>
+              ) : (
+                <p className="empty">
+                  {DAILY_PLANS.find((plan) => plan.id === planId)?.blurb}
+                </p>
+              )}
               <div className="mini-macros">
                 <span>P {grams(today.protein)}g</span>
                 <span>C {grams(today.carbs)}g</span>
