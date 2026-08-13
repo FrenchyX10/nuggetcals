@@ -16,6 +16,7 @@ export async function POST(request: Request) {
 
   const restaurant = readString(body, "restaurant", 80);
   const dishHint = readString(body, "dishHint", 80);
+  const sizeHint = readString(body, "sizeHint", 16);
   const imageBase64 = readString(body, "imageBase64", 12_000_000);
   const groqKey = readString(body, "groqKey", 200);
   const quarterFound = readBoolean(body, "quarterFound");
@@ -47,6 +48,7 @@ export async function POST(request: Request) {
       imageBase64,
       restaurant,
       dishHint,
+      sizeHint,
       quarterFound,
       provider: auth.provider,
       apiKey: auth.key,

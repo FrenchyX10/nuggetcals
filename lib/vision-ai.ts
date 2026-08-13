@@ -27,6 +27,7 @@ export async function analyzeWithFreeVision(options: {
   imageBase64: string;
   restaurant: string;
   dishHint: string;
+  sizeHint?: string;
   quarterFound?: boolean;
   provider: "groq" | "gemini";
   apiKey: string;
@@ -36,7 +37,7 @@ export async function analyzeWithFreeVision(options: {
       ? await callGroq(options)
       : await callGemini(options);
 
-  const identified = parseIdentity(raw, options.restaurant);
+  const identified = parseIdentity(raw, options.restaurant, options.sizeHint);
   if (!identified.isFood) {
     return {
       mealName: "Not a meal",
@@ -181,6 +182,7 @@ function groqRequest(
     imageBase64: string;
     restaurant: string;
     dishHint: string;
+    sizeHint?: string;
     quarterFound?: boolean;
     apiKey: string;
   },
@@ -202,7 +204,7 @@ function groqRequest(
         {
           role: "user",
           content: [
-            { type: "text", text: userPrompt(options.restaurant, options.dishHint, options.quarterFound) },
+            { type: "text", text: userPrompt(options.restaurant, options.dishHint, options.quarterFound, options.sizeHint) },
             {
               type: "image_url",
               image_url: {
@@ -220,6 +222,7 @@ async function callGemini(options: {
   imageBase64: string;
   restaurant: string;
   dishHint: string;
+  sizeHint?: string;
   quarterFound?: boolean;
   apiKey: string;
 }) {
@@ -238,7 +241,7 @@ async function callGemini(options: {
             {
               role: "user",
               parts: [
-                { text: userPrompt(options.restaurant, options.dishHint, options.quarterFound) },
+                { text: userPrompt(options.restaurant, options.dishHint, options.quarterFound, options.sizeHint) },
                 {
                   inlineData: {
                     mimeType: "image/jpeg",
@@ -270,11 +273,17 @@ async function callGemini(options: {
   throw new Error(lastError);
 }
 
-function userPrompt(restaurant: string, dishHint: string, quarterFound = false) {
+function userPrompt(
+  restaurant: string,
+  dishHint: string,
+  quarterFound = false,
+  sizeHint = "",
+) {
   return `Step 1 only: identify the food and its size. Do not calculate calories.
 
 Restaurant typed by the user: ${restaurant || "(none)"}
 User hint: ${dishHint || "(none)"}
+User size: ${sizeHint || "(not chosen — judge it from the photo)"}
 Quarter detector: ${quarterFound ? "possible quarter in the photo" : "no quarter detected"}. Confirm visually.
 
 Judge size from cups, boxes, pile height, and a quarter if present:
@@ -288,10 +297,12 @@ Return only this JSON:
 size must be small, medium, or large. estimatedGrams is a size guess from a quarter (24.26 mm) or a typical plate. Calories will be looked up next.`;
 }
 
-function parseIdentity(text: string, restaurantInput: string) {
+function parseIdentity(text: string, restaurantInput: string, sizeHint = "") {
   const value = extractJson(text);
   const items = Array.isArray(value.items) ? value.items : [];
-  const mealSize = parsePortionSize(value.size ?? restaurantInput);
+  const mealSize = sizeHint
+    ? parsePortionSize(sizeHint)
+    : parsePortionSize(value.size ?? restaurantInput);
   return {
     isFood: value.isFood !== false,
     notFoodReason: typeof value.notFoodReason === "string" ? value.notFoodReason : null,
@@ -305,10 +316,12 @@ function parseIdentity(text: string, restaurantInput: string) {
           name: String(row.name ?? "Food"),
           notes: String(row.notes ?? ""),
           estimatedGrams: num(row.estimatedGrams, 0),
-          size: parsePortionSize(
-            row.size ?? row.portionSize ?? `${row.name ?? ""} ${row.notes ?? ""}`,
-            mealSize,
-          ) as PortionSize,
+          size: (sizeHint
+            ? mealSize
+            : parsePortionSize(
+                row.size ?? row.portionSize ?? `${row.name ?? ""} ${row.notes ?? ""}`,
+                mealSize,
+              )) as PortionSize,
         };
       })
       .filter((item) => item.name.length > 0),

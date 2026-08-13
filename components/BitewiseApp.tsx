@@ -90,6 +90,7 @@ export function BitewiseApp() {
   const [groqKey, setGroqKey] = useState("");
   const [keyDraft, setKeyDraft] = useState("");
   const [savingKey, setSavingKey] = useState(false);
+  const [sizeHint, setSizeHint] = useState<PortionSize | "">("");
 
   useEffect(() => {
     setHistory(loadHistory());
@@ -180,6 +181,7 @@ export function BitewiseApp() {
             imageBase64,
             restaurant: restaurant.trim(),
             dishHint: dishHint.trim(),
+            sizeHint,
             groqKey,
             quarterFound: quarter.found,
           }),
@@ -205,7 +207,7 @@ export function BitewiseApp() {
         nextMeal = analyzeFree(
           sight.labels,
           restaurant.trim(),
-          dishHint.trim(),
+          [dishHint.trim(), sizeHint].filter(Boolean).join(" "),
           {
             caption: sight.caption,
             portionGrams: sight.portionGrams,
@@ -216,6 +218,7 @@ export function BitewiseApp() {
 
       setMeal(nextMeal);
       if (nextMeal.isFood) {
+        setSizeHint(parsePortionSize(nextMeal.portionSize, inferMealSize(nextMeal)));
         const id = crypto.randomUUID();
         const entry: HistoryEntry = {
           id,
@@ -266,6 +269,7 @@ export function BitewiseApp() {
   }
 
   function changeSize(next: PortionSize) {
+    setSizeHint(next);
     if (!meal) return;
     const updated = applyPortionSize(meal, next);
     setMeal(updated);
@@ -292,6 +296,7 @@ export function BitewiseApp() {
     setError(null);
     setRestaurant("");
     setDishHint("");
+    setSizeHint("");
   }
 
   function pickAlternative(record: FoodRecord) {
@@ -512,6 +517,26 @@ export function BitewiseApp() {
                   {name}
                 </button>
               ))}
+            </div>
+
+            <div className="size-field">
+              <p className="field-label">
+                Size <em>optional · AI picks this if you leave it</em>
+              </p>
+              <div className="chips size-picks" aria-label="Portion size">
+                {PORTION_SIZES.map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    className={sizeHint === value ? "chip is-on" : "chip"}
+                    onClick={() =>
+                      changeSize(value)
+                    }
+                  >
+                    {SIZE_LABEL[value]}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <button
@@ -763,17 +788,20 @@ function Results({
         {kcal(meal.calorieRangeHigh * servings)} kcal
       </p>
 
-      <div className="chips size-picks" aria-label="Portion size">
-        {PORTION_SIZES.map((value) => (
-          <button
-            key={value}
-            type="button"
-            className={size === value ? "chip is-on" : "chip"}
-            onClick={() => onSize(value)}
-          >
-            {SIZE_LABEL[value]}
-          </button>
-        ))}
+      <div className="size-field">
+        <p className="field-label">Size</p>
+        <div className="chips size-picks" aria-label="Portion size">
+          {PORTION_SIZES.map((value) => (
+            <button
+              key={value}
+              type="button"
+              className={size === value ? "chip is-on" : "chip"}
+              onClick={() => onSize(value)}
+            >
+              {SIZE_LABEL[value]}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="macros">
