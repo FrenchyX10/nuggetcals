@@ -6,6 +6,17 @@ import {
   normalizeName,
   type FoodRecord,
 } from "@/lib/nutrition-data";
+import {
+  inferMealSize,
+  parsePortionSize,
+  pickSizedRecord,
+  recordNamedSize,
+  SIZE_LABEL,
+  SIZE_SCALE,
+  sizeScaleFor,
+  stripSizeWords,
+  type PortionSize,
+} from "@/lib/portion-size";
 
 export function refineMealWithPublishedNutrition(
   meal: MealAnalysis,
@@ -20,42 +31,70 @@ export function refineMealWithPublishedNutrition(
   }
 
   const chain = findRestaurant(restaurantInput);
+  const mealSize = parsePortionSize(meal.portionSize, inferMealSize(meal));
   const refinedItems = meal.items.map((item) => {
-    const match = matchRecord(
-      `${item.name} ${item.brandOrRestaurantItem ?? ""} ${dishHint}`,
-      chain,
+    const size = parsePortionSize(
+      item.portionSize ?? `${item.name} ${item.portionDescription} ${dishHint}`,
+      mealSize,
     );
-    if (!match) return item;
-    const official = Boolean(chain && match.restaurant === chain);
-    const grams = official
-      ? match.grams
-      : item.estimatedGrams > 20
-        ? item.estimatedGrams
-        : match.grams;
-    const scale = official ? 1 : grams / Math.max(match.grams, 1);
+    const match = matchRecord(
+      `${stripSizeWords(item.name)} ${item.brandOrRestaurantItem ?? ""} ${dishHint}`,
+      chain,
+      size,
+    );
+    if (!match) {
+      return {
+        ...item,
+        portionSize: size,
+        portionDescription: `${SIZE_LABEL[size]} · ${item.portionDescription}`,
+      };
+    }
+    const variant = pickSizedRecord(match, size, chain);
+    const official = Boolean(chain && variant.restaurant === chain);
+    const namedSize = recordNamedSize(variant);
+    let grams: number;
+    let scale: number;
+    if (official && namedSize === size) {
+      grams = variant.grams;
+      scale = 1;
+    } else if (official) {
+      scale = sizeScaleFor(size, variant);
+      grams = variant.grams * scale;
+    } else if (item.estimatedGrams > 20) {
+      grams = item.estimatedGrams;
+      scale = grams / Math.max(variant.grams, 1);
+    } else {
+      scale = SIZE_SCALE[size];
+      grams = variant.grams * scale;
+    }
     return {
       ...item,
-      name: official ? match.name : item.name,
-      brandOrRestaurantItem: match.restaurant ?? item.brandOrRestaurantItem,
+      name: official ? variant.name : item.name,
+      brandOrRestaurantItem: variant.restaurant ?? item.brandOrRestaurantItem,
+      portionSize: size,
       portionDescription: official
-        ? `1 official ${match.restaurant} serving · ${match.grams}g`
-        : `${Math.round(grams)}g · ${item.portionDescription}`,
+        ? namedSize === size
+          ? `Official ${variant.restaurant} ${SIZE_LABEL[size]} · ${Math.round(grams)}g`
+          : `${SIZE_LABEL[size]} · official ${variant.restaurant} scaled · ${Math.round(grams)}g`
+        : `${SIZE_LABEL[size]} · ${Math.round(grams)}g`,
       estimatedGrams: Math.round(grams),
-      calories: round(match.calories * scale),
-      proteinG: round1(match.proteinG * scale),
-      carbsG: round1(match.carbsG * scale),
-      fatG: round1(match.fatG * scale),
-      fiberG: round1(match.fiberG * scale),
-      sugarG: round1(match.sugarG * scale),
-      sodiumMg: Math.round(match.sodiumMg * scale),
-      dataSource: match.restaurant
+      calories: round(variant.calories * scale),
+      proteinG: round1(variant.proteinG * scale),
+      carbsG: round1(variant.carbsG * scale),
+      fatG: round1(variant.fatG * scale),
+      fiberG: round1(variant.fiberG * scale),
+      sugarG: round1(variant.sugarG * scale),
+      sodiumMg: Math.round(variant.sodiumMg * scale),
+      dataSource: variant.restaurant
         ? ("restaurant_official" as const)
-        : match.source.startsWith("USDA")
+        : variant.source.startsWith("USDA")
           ? ("usda" as const)
           : ("nutrition_database" as const),
       notes: official
-        ? `Official ${match.restaurant} 1-serving calories`
-        : `Published ${match.source} scaled to ${Math.round(grams)}g. ${item.notes}`.trim(),
+        ? namedSize === size
+          ? `Official ${variant.restaurant} ${SIZE_LABEL[size]} calories`
+          : `Official ${variant.restaurant} ${SIZE_LABEL[size]} (${Math.round(SIZE_SCALE[size] * 100)}% of regular)`
+        : `Published ${variant.source} scaled to ${SIZE_LABEL[size]} (${Math.round(grams)}g). ${item.notes}`.trim(),
     };
   });
 
@@ -99,6 +138,10 @@ export function refineMealWithPublishedNutrition(
     sugarG: round1(totals.sugarG),
     sodiumMg: Math.round(totals.sodiumMg),
     method: chain && usedPublished ? "hybrid" : usedPublished ? "usda" : meal.method,
+    portionSize: parsePortionSize(
+      refinedItems[0]?.portionSize,
+      mealSize,
+    ),
     assumptions: [
       ...meal.assumptions.filter(
         (line) =>
@@ -107,21 +150,23 @@ export function refineMealWithPublishedNutrition(
           !line.startsWith("Step 3:"),
       ),
       "Step 1: AI identified the food on the plate.",
-      chain && usedPublished
-        ? "Step 2: Looked up the official 1-serving menu size."
-        : "Step 2: Looked up serving size (quarter ruler or a typical serving).",
+      `Step 2: Identified the size as ${SIZE_LABEL[mealSize]}${
+        chain && usedPublished
+          ? ", then looked up the official menu row for that size."
+          : ", then looked up a typical serving (or a quarter ruler)."
+      }`,
       usedPublished
         ? "Step 3: Estimated calories from published nutrition for that size."
         : "Step 3: Published nutrition was not a close match, so the size guess was kept.",
     ].slice(0, 6),
     precisionNotes:
-      "Identify → size lookup → calorie estimate. Chain meals use official 1-serving numbers, not a photo size guess.",
+      "Identify → size (small / medium / large) → calorie estimate. Official S/M/L menu rows are used when they exist.",
     sources: uniqueSources(meal.sources, refinedItems, chain),
   };
 }
 
-function matchRecord(query: string, chain: string | null) {
-  const needle = normalizeName(query);
+function matchRecord(query: string, chain: string | null, size: PortionSize) {
+  const needle = stripSizeWords(query) || normalizeName(query);
   if (!needle) return null;
   const pool = chain
     ? FOODS.filter((item) => item.restaurant === chain || !item.restaurant)
@@ -139,14 +184,18 @@ function matchRecord(query: string, chain: string | null) {
     if (wantsBurger && isChicken) continue;
 
     let score = 0;
-    if (normalizeName(record.name) === needle) score += 8;
-    else if (blob.includes(needle) || needle.includes(normalizeName(record.name))) score += 4;
+    const recordBase = stripSizeWords(record.name);
+    if (recordBase === needle || normalizeName(record.name) === needle) score += 8;
+    else if (blob.includes(needle) || needle.includes(recordBase)) score += 4;
     const a = needle.split(" ").filter((token) => token.length > 2);
     const b = new Set(blob.split(" ").filter((token) => token.length > 2));
     const hits = a.filter((token) => b.has(token)).length;
     score += hits;
     if (a.length > 0 && hits === a.length) score += 2;
     if (chain && record.restaurant === chain) score += 1.5;
+    const named = recordNamedSize(record);
+    if (named === size) score += 2.5;
+    else if (named && named !== size) score -= 1.2;
     if (!best || score > best.score) best = { record, score };
   }
   return best && best.score >= 3 ? best.record : null;

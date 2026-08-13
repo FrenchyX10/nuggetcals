@@ -7,6 +7,15 @@ import {
   normalizeName,
   type FoodRecord,
 } from "@/lib/nutrition-data";
+import {
+  parsePortionSize,
+  pickSizedRecord,
+  recordNamedSize,
+  SIZE_LABEL,
+  SIZE_SCALE,
+  sizeScaleFor,
+  type PortionSize,
+} from "@/lib/portion-size";
 
 export type FoodLabel = {
   label: string;
@@ -62,13 +71,17 @@ export function analyzeFree(
     );
   }
 
+  const size = parsePortionSize(
+    `${options.caption ?? ""} ${dishHint} ${labels.map((item) => item.label).join(" ")}`,
+  );
   const items = picked.map(({ record, score }, index) =>
     toItem(
-      record,
+      pickSizedRecord(record, size, matchedChain),
       score,
       matchedChain,
       index === 0 ? options.portionGrams : undefined,
       options.quarterFound,
+      size,
     ),
   );
   const totals = sumItems(items);
@@ -87,11 +100,12 @@ export function analyzeFree(
         ? `Used the name you typed (${restaurant}) and matched published ${matchedChain} menu items.`
         : `Kept the restaurant you typed (${restaurant}). It is not in the built-in chain list, so generic published portions were used.`
       : "No restaurant was given, so generic published portions were used.",
+    `Identified size: ${SIZE_LABEL[size]}.`,
     options.caption
       ? `AI identified the plate as: “${options.caption}”.`
       : "AI identified the food, then serving size was looked up from published numbers.",
     matchedChain
-      ? `Used the official ${matchedChain} 1-serving number. Fast-food items are not scaled up from the photo.`
+      ? `Used the official ${matchedChain} ${SIZE_LABEL[size]} size when a menu row exists.`
       : options.quarterFound
         ? `Found a US quarter in the photo and used it as a ruler (~${options.portionGrams}g).`
         : options.portionGrams
@@ -123,6 +137,7 @@ export function analyzeFree(
     sodiumMg: Math.round(totals.sodiumMg),
     overallConfidence: clamp(bestScore, 0.28, 0.9),
     method,
+    portionSize: size,
     items,
     assumptions,
     precisionNotes: matchedChain
@@ -340,25 +355,38 @@ function toItem(
   restaurant: string | null,
   portionGrams?: number,
   quarterFound?: boolean,
+  size: PortionSize = "medium",
 ): FoodItem {
   const official = Boolean(restaurant && record.restaurant === restaurant);
+  const namedSize = recordNamedSize(record);
   let grams = record.grams;
-  if (!official && portionGrams && portionGrams > 40) {
+  let scale = 1;
+  if (official && namedSize === size) {
+    grams = record.grams;
+    scale = 1;
+  } else if (official) {
+    scale = sizeScaleFor(size, record);
+    grams = Math.round(record.grams * scale);
+  } else if (portionGrams && portionGrams > 40) {
     if (quarterFound) {
       grams = Math.round(portionGrams);
     } else {
       const rawScale = portionGrams / Math.max(record.grams, 1);
-      const scale = clamp(rawScale, 0.8, 1.2);
+      scale = clamp(rawScale, 0.7, 1.4);
       grams = Math.round(record.grams * scale);
     }
+    scale = grams / Math.max(record.grams, 1);
+  } else {
+    scale = SIZE_SCALE[size];
+    grams = Math.round(record.grams * scale);
   }
-  const scale = grams / Math.max(record.grams, 1);
   return {
     name: record.name,
     brandOrRestaurantItem: record.restaurant,
     portionDescription: official
-      ? `1 official ${record.restaurant} serving · ${record.grams}g`
-      : `${grams}g estimated from the photo`,
+      ? `Official ${record.restaurant} ${SIZE_LABEL[size]} · ${grams}g`
+      : `${SIZE_LABEL[size]} · ${grams}g estimated from the photo`,
+    portionSize: size,
     estimatedGrams: grams,
     calories: Math.round(record.calories * scale),
     proteinG: round1(record.proteinG * scale),
@@ -374,8 +402,10 @@ function toItem(
         ? "usda"
         : "nutrition_database",
     notes: official
-      ? `Official ${restaurant} menu calories — not scaled from the photo`
-      : `${record.source}, size kept close to a normal serving`,
+      ? namedSize === size
+        ? `Official ${restaurant} ${SIZE_LABEL[size]} calories`
+        : `Official ${restaurant} scaled to ${SIZE_LABEL[size]}`
+      : `${record.source}, ${SIZE_LABEL[size]} portion`,
   };
 }
 
@@ -441,6 +471,7 @@ function emptyMeal(reason: string): MealAnalysis {
     sodiumMg: 0,
     overallConfidence: 0.15,
     method: "visual_estimate",
+    portionSize: "medium",
     items: [],
     assumptions: [],
     precisionNotes: reason,

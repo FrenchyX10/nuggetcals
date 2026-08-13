@@ -11,6 +11,10 @@ export const foodItemSchema = z.object({
   portionDescription: z
     .string()
     .describe("Human portion, e.g. '1 regular burrito', '180g cooked pasta'"),
+  portionSize: z
+    .enum(["small", "medium", "large"])
+    .default("medium")
+    .describe("Identified serving size"),
   estimatedGrams: z.number().describe("Estimated edible weight in grams"),
   calories: z.number().describe("Kilocalories for this item as plated"),
   proteinG: z.number(),
@@ -58,6 +62,10 @@ export const mealAnalysisSchema = z.object({
     "hybrid",
     "visual_estimate",
   ]),
+  portionSize: z
+    .enum(["small", "medium", "large"])
+    .default("medium")
+    .describe("Overall plate size: small, medium, or large"),
   items: z.array(foodItemSchema).describe("Every visible edible item"),
   assumptions: z
     .array(z.string())

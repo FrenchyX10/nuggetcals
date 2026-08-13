@@ -598,7 +598,15 @@ input {
   line-height: 1.02;
 }
 
-.match,
+.match {
+  margin: 0 0 8px;
+  color: var(--ink-soft);
+}
+
+.size-picks {
+  margin: 0 0 16px;
+}
+
 .range {
   margin: 0 0 18px;
   color: var(--ink-soft);

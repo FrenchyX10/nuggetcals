@@ -6,9 +6,9 @@ NuggetCals photographs a real meal and estimates calories in three steps: identi
 
 1. You upload a JPG/PNG of food (or take one with your phone camera).
 2. Optionally type a restaurant and what the dish is (`chicken`, `bowl`, …).
-3. Vision AI identifies every item on the plate. It does not invent calorie numbers.
-4. Size comes next: official 1-serving chain items, a typical homemade serving, or a US quarter (24.26 mm) as a ruler.
-5. Calories are published restaurant / USDA numbers scaled to that size.
+3. Vision AI identifies every item on the plate and whether it looks small, medium, or large. It does not invent calorie numbers.
+4. Size comes next: official S/M/L menu rows when they exist, a typical homemade serving scaled to that size, or a US quarter (24.26 mm) as a ruler.
+5. Calories are published restaurant / USDA numbers for that size. Tap Small / Medium / Large if the guess is wrong.
 
 Add a free Groq key in the app so vision can actually see the plate. Create one at [console.groq.com/keys](https://console.groq.com/keys) — no credit card.
 

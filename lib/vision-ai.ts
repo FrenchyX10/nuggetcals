@@ -1,5 +1,11 @@
 import { mealAnalysisSchema, type MealAnalysis } from "@/lib/schema";
 import { displayRestaurant } from "@/lib/nutrition-data";
+import {
+  inferMealSize,
+  parsePortionSize,
+  SIZE_LABEL,
+  type PortionSize,
+} from "@/lib/portion-size";
 import { refineMealWithPublishedNutrition } from "@/lib/refine-meal";
 
 const SYSTEM = `You only identify food in a photo. Do not invent calorie numbers.
@@ -8,6 +14,10 @@ Rules:
 - Name every edible item you can actually see. Be specific: blueberry pancakes vs fried chicken vs hamburger.
 - Never confuse pancakes or waffles with fried chicken. Never call chicken a burger.
 - Do not add fries, drinks, or sides unless they are clearly in the photo.
+- Judge each item's size as small, medium, or large from the photo.
+  small = kids / junior / value / little pile / short cup / 4–6 pieces
+  medium = regular restaurant serving or a typical plate
+  large = oversized pile, large fry box, venti/large cup, extra helping
 - If a US quarter is visible, set quarterVisible true. A quarter is 24.26 mm across.
 - If a restaurant is named, pick the closest real menu item name (Hamburger, not Whopper, unless it clearly is a Whopper).
 - If it is not food, set isFood false.
@@ -45,6 +55,7 @@ export async function analyzeWithFreeVision(options: {
       sodiumMg: 0,
       overallConfidence: 0.2,
       method: "visual_estimate",
+      portionSize: "medium",
       items: [],
       assumptions: [],
       precisionNotes: identified.notFoodReason ?? "",
@@ -55,10 +66,28 @@ export async function analyzeWithFreeVision(options: {
   const identifiedItems =
     identified.items.length > 0
       ? identified.items
-      : [{ name: identified.mealName || "Meal", notes: "", estimatedGrams: 0 }];
-  const hint = [options.dishHint, ...identifiedItems.map((item) => item.name)]
+      : [
+          {
+            name: identified.mealName || "Meal",
+            notes: "",
+            estimatedGrams: 0,
+            size: identified.size,
+          },
+        ];
+  const hint = [
+    options.dishHint,
+    ...identifiedItems.map((item) => `${item.size} ${item.name}`),
+  ]
     .filter(Boolean)
     .join(" ");
+  const mealSize = inferMealSize({
+    mealName: identified.mealName,
+    items: identifiedItems.map((item) => ({
+      name: item.name,
+      portionSize: item.size,
+      portionDescription: item.notes,
+    })),
+  });
   const skeleton = mealAnalysisSchema.parse({
     mealName: identified.mealName,
     restaurant: displayRestaurant(options.restaurant),
@@ -76,10 +105,12 @@ export async function analyzeWithFreeVision(options: {
     sodiumMg: 0,
     overallConfidence: 0.72,
     method: options.restaurant ? "restaurant_menu" : "usda",
+    portionSize: mealSize,
     items: identifiedItems.map((item) => ({
       name: item.name,
       brandOrRestaurantItem: options.restaurant || null,
-      portionDescription: item.notes || "identified in photo",
+      portionDescription: `${SIZE_LABEL[item.size]} · ${item.notes || "identified in photo"}`,
+      portionSize: item.size,
       estimatedGrams: item.estimatedGrams || 0,
       calories: 0,
       proteinG: 0,
@@ -90,18 +121,18 @@ export async function analyzeWithFreeVision(options: {
       sodiumMg: 0,
       confidence: 0.72,
       dataSource: "visual_estimate",
-      notes: item.notes,
+      notes: `${SIZE_LABEL[item.size]} from the photo. ${item.notes}`.trim(),
     })),
     assumptions: [
       "Step 1: AI identified the food on the plate.",
-      "Step 2: Looked up serving size (official menu, a US quarter, or a typical serving).",
+      `Step 2: Identified the size as ${SIZE_LABEL[mealSize]}, then looked up that serving.`,
       "Step 3: Estimated calories from published nutrition for that size.",
       identified.quarterVisible || options.quarterFound
         ? "A US quarter was used as a 24.26 mm ruler for homemade size."
         : "No quarter was used.",
     ],
     precisionNotes:
-      "Identify → size lookup → calorie estimate. Chain meals use official 1-serving numbers.",
+      "Identify → size (small / medium / large) → calorie estimate. Chain meals use official size rows when they exist.",
     sources: [],
   });
 
@@ -240,25 +271,32 @@ async function callGemini(options: {
 }
 
 function userPrompt(restaurant: string, dishHint: string, quarterFound = false) {
-  return `Step 1 only: identify the food in this photo. Do not calculate calories.
+  return `Step 1 only: identify the food and its size. Do not calculate calories.
 
 Restaurant typed by the user: ${restaurant || "(none)"}
 User hint: ${dishHint || "(none)"}
 Quarter detector: ${quarterFound ? "possible quarter in the photo" : "no quarter detected"}. Confirm visually.
 
-Return only this JSON:
-{"isFood":true,"notFoodReason":null,"mealName":"short name","quarterVisible":false,"items":[{"name":"specific food name","notes":"what you see","estimatedGrams":180}]}
+Judge size from cups, boxes, pile height, and a quarter if present:
+- small: kids, junior, value, little pile, short cup
+- medium: regular serving
+- large: big pile, large box/cup, extra helping
 
-estimatedGrams is a size guess from a quarter (24.26 mm) or a typical plate. If a restaurant is named, still identify the menu item; calories will be looked up next.`;
+Return only this JSON:
+{"isFood":true,"notFoodReason":null,"mealName":"short name","size":"medium","quarterVisible":false,"items":[{"name":"specific food name","size":"medium","notes":"what you see","estimatedGrams":180}]}
+
+size must be small, medium, or large. estimatedGrams is a size guess from a quarter (24.26 mm) or a typical plate. Calories will be looked up next.`;
 }
 
 function parseIdentity(text: string, restaurantInput: string) {
   const value = extractJson(text);
   const items = Array.isArray(value.items) ? value.items : [];
+  const mealSize = parsePortionSize(value.size ?? restaurantInput);
   return {
     isFood: value.isFood !== false,
     notFoodReason: typeof value.notFoodReason === "string" ? value.notFoodReason : null,
     mealName: String(value.mealName ?? restaurantInput ?? "Meal"),
+    size: mealSize,
     quarterVisible: value.quarterVisible === true,
     items: items
       .map((item) => {
@@ -267,6 +305,10 @@ function parseIdentity(text: string, restaurantInput: string) {
           name: String(row.name ?? "Food"),
           notes: String(row.notes ?? ""),
           estimatedGrams: num(row.estimatedGrams, 0),
+          size: parsePortionSize(
+            row.size ?? row.portionSize ?? `${row.name ?? ""} ${row.notes ?? ""}`,
+            mealSize,
+          ) as PortionSize,
         };
       })
       .filter((item) => item.name.length > 0),

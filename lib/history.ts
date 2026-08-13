@@ -47,7 +47,12 @@ export function addHistory(entry: HistoryEntry) {
 
 export function updateHistory(
   id: string,
-  patch: Partial<Pick<HistoryEntry, "servings">>,
+  patch: Partial<
+    Pick<
+      HistoryEntry,
+      "servings" | "result" | "totalCalories" | "proteinG" | "carbsG" | "fatG"
+    >
+  >,
 ) {
   const next = loadHistory().map((item) =>
     item.id === id ? { ...item, ...patch } : item,

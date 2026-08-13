@@ -18,6 +18,14 @@ import { confidenceLabel, grams, kcal, methodLabel } from "@/lib/format";
 import { DAILY_PLANS, loadPlan, savePlan } from "@/lib/plan";
 import type { FoodRecord } from "@/lib/nutrition-data";
 import type { MealAnalysis } from "@/lib/schema";
+import {
+  applyPortionSize,
+  inferMealSize,
+  parsePortionSize,
+  PORTION_SIZES,
+  SIZE_LABEL,
+  type PortionSize,
+} from "@/lib/portion-size";
 
 const RESTAURANTS = [
   "Chipotle",
@@ -53,8 +61,8 @@ const DISH_HINTS = [
 
 const ANALYZE_STEPS = [
   "Identifying the food on the plate…",
-  "Looking up serving size…",
-  "Estimating calories from published nutrition…",
+  "Judging small, medium, or large…",
+  "Looking up that size, then estimating calories…",
 ];
 
 const GROQ_KEY = "nuggetcals-groq-key";
@@ -257,6 +265,23 @@ export function BitewiseApp() {
     if (entryId) setHistory(updateHistory(entryId, { servings: value }));
   }
 
+  function changeSize(next: PortionSize) {
+    if (!meal) return;
+    const updated = applyPortionSize(meal, next);
+    setMeal(updated);
+    if (entryId) {
+      setHistory(
+        updateHistory(entryId, {
+          result: updated,
+          totalCalories: updated.totalCalories,
+          proteinG: updated.proteinG,
+          carbsG: updated.carbsG,
+          fatG: updated.fatG,
+        }),
+      );
+    }
+  }
+
   function resetPlate() {
     setMeal(null);
     setPreviewUrl(null);
@@ -332,12 +357,14 @@ export function BitewiseApp() {
             <p>
               <strong>Identify the plate</strong>
               Vision AI names what is actually on the plate — pancakes stay
-              pancakes, chicken stays chicken.
+              pancakes, chicken stays chicken — and whether it looks small,
+              medium, or large.
             </p>
             <p>
               <strong>Look up the size</strong>
-              Chain meals use official 1-serving sizes. Homemade food uses a
-              typical serving, or a US quarter as a ruler.
+              Official small / medium / large menu rows when they exist.
+              Homemade food uses a typical serving scaled to that size, or a
+              US quarter as a ruler.
             </p>
             <p>
               <strong>Estimate the calories</strong>
@@ -636,8 +663,8 @@ export function BitewiseApp() {
               <p className="card-kicker">Reading the plate</p>
               <h2>{ANALYZE_STEPS[step]}</h2>
               <p>
-                AI names the food first. Then NuggetCals looks up serving size
-                and estimates calories from published numbers.
+                AI names the food and whether it looks small, medium, or large.
+                Then NuggetCals looks up that size and estimates calories.
               </p>
             </div>
           ) : meal && !meal.isFood ? (
@@ -651,6 +678,7 @@ export function BitewiseApp() {
               meal={meal}
               servings={scale}
               onServings={changeServings}
+              onSize={changeSize}
               alternatives={suggestAlternatives(
                 restaurant,
                 dishHint,
@@ -661,16 +689,16 @@ export function BitewiseApp() {
           ) : (
             <div className="result-card muted" id="how">
               <p className="card-kicker">How NuggetCals works</p>
-              <h2>Identify the plate. Look up the size. Estimate calories.</h2>
+              <h2>Identify the plate. Judge the size. Estimate calories.</h2>
               <ol className="how-list">
                 <li>
                   <strong>Identify.</strong> Vision AI names every item on the plate. It does not invent calorie numbers.
                 </li>
                 <li>
-                  <strong>Size.</strong> Chain meals use official 1-serving sizes. Homemade food uses a typical serving, or a US quarter as a 24.26 mm ruler.
+                  <strong>Size.</strong> It also reads small, medium, or large — fry boxes, cups, pile height, or a US quarter as a 24.26 mm ruler.
                 </li>
                 <li>
-                  <strong>Calories.</strong> Published restaurant and USDA numbers are scaled to that size. Use <em>I ate</em> if you only finished part of the plate.
+                  <strong>Calories.</strong> Official S/M/L menu rows when they exist, otherwise published numbers scaled to that size. Tap Small / Medium / Large if it guessed wrong.
                 </li>
               </ol>
             </div>
@@ -690,12 +718,14 @@ function Results({
   meal,
   servings,
   onServings,
+  onSize,
   alternatives,
   onPick,
 }: {
   meal: MealAnalysis;
   servings: number;
   onServings: (value: number) => void;
+  onSize: (value: PortionSize) => void;
   alternatives: FoodRecord[];
   onPick: (record: FoodRecord) => void;
 }) {
@@ -704,6 +734,7 @@ function Results({
   const carbs = meal.carbsG * servings;
   const fat = meal.fatG * servings;
   const macroTotal = Math.max(protein + carbs + fat, 1);
+  const size = parsePortionSize(meal.portionSize, inferMealSize(meal));
 
   return (
     <div className="result-card">
@@ -727,9 +758,23 @@ function Results({
       </div>
 
       <p className="range">
-        Likely range {kcal(meal.calorieRangeLow * servings)}–
+        {SIZE_LABEL[size]} portion · likely range{" "}
+        {kcal(meal.calorieRangeLow * servings)}–
         {kcal(meal.calorieRangeHigh * servings)} kcal
       </p>
+
+      <div className="chips size-picks" aria-label="Portion size">
+        {PORTION_SIZES.map((value) => (
+          <button
+            key={value}
+            type="button"
+            className={size === value ? "chip is-on" : "chip"}
+            onClick={() => onSize(value)}
+          >
+            {SIZE_LABEL[value]}
+          </button>
+        ))}
+      </div>
 
       <div className="macros">
         <Macro label="Protein" value={protein} color="var(--protein)" share={protein / macroTotal} />
