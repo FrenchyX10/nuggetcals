@@ -16,9 +16,10 @@ import { detectQuarterScale } from "@/lib/quarter-scale";
 import { prepareImage } from "@/lib/image";
 import { confidenceLabel, grams, kcal, methodLabel } from "@/lib/format";
 import { DAILY_PLANS, loadPlan, savePlan } from "@/lib/plan";
-import type { FoodRecord } from "@/lib/nutrition-data";
+import { findRestaurant, type FoodRecord } from "@/lib/nutrition-data";
 import type { MealAnalysis } from "@/lib/schema";
 import { SiteHeader } from "@/components/SiteHeader";
+import { RestaurantPicker } from "@/components/RestaurantPicker";
 import {
   applyPortionSize,
   inferMealSize,
@@ -300,6 +301,35 @@ export function BitewiseApp() {
     setSizeHint("");
   }
 
+  function pickMenuItem(record: FoodRecord) {
+    const chain = findRestaurant(restaurant) ?? record.restaurant ?? restaurant.trim();
+    setRestaurant(chain);
+    setDishHint(record.name);
+    const nextMeal = mealFromRecord(record, chain);
+    setMeal(nextMeal);
+    const id = entryId ?? crypto.randomUUID();
+    const entry: HistoryEntry = {
+      id,
+      createdAt: new Date().toISOString(),
+      thumbnail: thumbnail ?? "/nugget.jpg",
+      mealName: nextMeal.mealName,
+      restaurant: nextMeal.restaurant ?? chain,
+      totalCalories: nextMeal.totalCalories,
+      proteinG: nextMeal.proteinG,
+      carbsG: nextMeal.carbsG,
+      fatG: nextMeal.fatG,
+      overallConfidence: nextMeal.overallConfidence,
+      servings: 1,
+      result: nextMeal,
+    };
+    setEntryId(id);
+    setServings(1);
+    setHistory(addHistory(entry));
+    window.requestAnimationFrame(() => {
+      resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
   function pickAlternative(record: FoodRecord) {
     const nextMeal = mealFromRecord(record, restaurant.trim());
     setMeal(nextMeal);
@@ -450,17 +480,11 @@ export function BitewiseApp() {
               ) : null}
             </div>
 
-            <label className="field">
-              <span>
-                Restaurant <em>optional · makes restaurant meals much more accurate</em>
-              </span>
-              <input
-                value={restaurant}
-                onChange={(event) => setRestaurant(event.target.value)}
-                placeholder="Chipotle, Olive Garden, the diner down the street…"
-                maxLength={80}
-              />
-            </label>
+            <RestaurantPicker
+              restaurant={restaurant}
+              onRestaurant={setRestaurant}
+              onPickItem={pickMenuItem}
+            />
 
             <div className="chips" aria-label="Restaurant shortcuts">
               {RESTAURANTS.map((name) => (
