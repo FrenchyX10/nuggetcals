@@ -1156,6 +1156,16 @@ video {
     width: 100%;
     margin-bottom: 8px;
   }
+
+  .resto-chips {
+    gap: 10px 10px;
+    margin: 4px 0 16px;
+  }
+
+  .resto-chips .chip {
+    min-height: 42px;
+    padding: 10px 16px;
+  }
 }
 
 @media (min-width: 861px) {

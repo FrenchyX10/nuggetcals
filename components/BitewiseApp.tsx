@@ -486,7 +486,7 @@ export function BitewiseApp() {
               onPickItem={pickMenuItem}
             />
 
-            <div className="chips hide-mobile" aria-label="Restaurant shortcuts">
+            <div className="chips resto-chips" aria-label="Restaurant shortcuts">
               {RESTAURANTS.map((name) => (
                 <button
                   key={name}
