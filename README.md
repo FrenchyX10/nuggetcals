@@ -6,7 +6,7 @@ NuggetCals photographs a real meal and estimates calories in three steps: identi
 
 1. You upload a JPG/PNG of food (or take one with your phone camera).
 2. Optionally type a restaurant and what the dish is (`chicken`, `bowl`, …).
-3. Vision AI identifies every item on the plate and whether it looks small, medium, or large. It does not invent calorie numbers.
+3. Vision AI identifies every item, then uses visible ingredients as a scale (scoops, piece count, how full the plate is) to pick small, medium, or large.
 4. Size comes next: official S/M/L menu rows when they exist, a typical homemade serving scaled to that size, or a US quarter (24.26 mm) as a ruler.
 5. Calories are published restaurant / USDA numbers for that size. Tap Small / Medium / Large if the guess is wrong.
 

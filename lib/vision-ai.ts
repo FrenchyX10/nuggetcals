@@ -14,11 +14,14 @@ Rules:
 - Name every edible item you can actually see. Be specific: blueberry pancakes vs fried chicken vs hamburger.
 - Never confuse pancakes or waffles with fried chicken. Never call chicken a burger.
 - Do not add fries, drinks, or sides unless they are clearly in the photo.
-- Judge each item's size as small, medium, or large from the photo.
-  small = kids / junior / value / little pile / short cup / 4–6 pieces
-  medium = regular restaurant serving or a typical plate
-  large = oversized pile, large fry box, venti/large cup, extra helping
-- If a US quarter is visible, set quarterVisible true. A quarter is 24.26 mm across.
+- Use what is visible as a scale, then pick small, medium, or large.
+  Look at ingredients you can see: scoop of rice, pile of fries, piece count, patty vs bun, pancake stack, cup/box, how full the plate is.
+  Compare those to a normal restaurant serving.
+  small = kids / junior / thin layer / 1–2 pancakes / 4–6 pieces / plate half empty
+  medium = regular serving / typical scoop / 3 pancakes / normal fry box
+  large = heaping scoops / extra protein / 4+ pancakes / stuffed plate / large box or cup
+- Put the visual scale clues in sizeReason (e.g. "two heaping rice scoops and extra chicken").
+- If a US quarter is visible, set quarterVisible true and use it as a 24.26 mm ruler.
 - If a restaurant is named, pick the closest real menu item name (Hamburger, not Whopper, unless it clearly is a Whopper).
 - If it is not food, set isFood false.
 - Reply with one small JSON object only. No markdown. No extra text.`;
@@ -126,10 +129,12 @@ export async function analyzeWithFreeVision(options: {
     })),
     assumptions: [
       "Step 1: AI identified the food on the plate.",
-      `Step 2: Identified the size as ${SIZE_LABEL[mealSize]}, then looked up that serving.`,
+      identified.sizeReason
+        ? `Step 2: Used visible ingredients as a scale and judged ${SIZE_LABEL[mealSize]} — ${identified.sizeReason}`
+        : `Step 2: Used visible ingredients as a scale and judged ${SIZE_LABEL[mealSize]}.`,
       "Step 3: Estimated calories from published nutrition for that size.",
       identified.quarterVisible || options.quarterFound
-        ? "A US quarter was used as a 24.26 mm ruler for homemade size."
+        ? "A US quarter was used as a 24.26 mm ruler next to the ingredients."
         : "No quarter was used.",
     ],
     precisionNotes:
@@ -279,22 +284,28 @@ function userPrompt(
   quarterFound = false,
   sizeHint = "",
 ) {
-  return `Step 1 only: identify the food and its size. Do not calculate calories.
+  return `Step 1 only: identify the food and judge small / medium / large. Do not calculate calories.
 
 Restaurant typed by the user: ${restaurant || "(none)"}
 User hint: ${dishHint || "(none)"}
-User size: ${sizeHint || "(not chosen — judge it from the photo)"}
+User size: ${sizeHint || "(not chosen — judge it from the photo using visible ingredients as a scale)"}
 Quarter detector: ${quarterFound ? "possible quarter in the photo" : "no quarter detected"}. Confirm visually.
 
-Judge size from cups, boxes, pile height, and a quarter if present:
-- small: kids, junior, value, little pile, short cup
-- medium: regular serving
-- large: big pile, large box/cup, extra helping
+Use visible ingredients as the scale:
+- How much rice, pasta, fries, meat, cheese, sauce do you actually see?
+- Piece count (nuggets, pancakes, tacos, wings)
+- How full is the plate / bowl / box / cup compared to a normal serving?
+- If a quarter is visible, use it as a 24.26 mm ruler next to those ingredients.
+
+Then pick size:
+- small: light plate, kids/junior, thin layer
+- medium: regular restaurant serving
+- large: heaping, extra scoops, stuffed plate
 
 Return only this JSON:
-{"isFood":true,"notFoodReason":null,"mealName":"short name","size":"medium","quarterVisible":false,"items":[{"name":"specific food name","size":"medium","notes":"what you see","estimatedGrams":180}]}
+{"isFood":true,"notFoodReason":null,"mealName":"short name","size":"medium","sizeReason":"visible scale clues","quarterVisible":false,"items":[{"name":"specific food name","size":"medium","notes":"what you see","estimatedGrams":180}]}
 
-size must be small, medium, or large. estimatedGrams is a size guess from a quarter (24.26 mm) or a typical plate. Calories will be looked up next.`;
+size must be small, medium, or large. sizeReason is the ingredient/scale evidence. Calories will be looked up next.`;
 }
 
 function parseIdentity(text: string, restaurantInput: string, sizeHint = "") {
@@ -308,6 +319,10 @@ function parseIdentity(text: string, restaurantInput: string, sizeHint = "") {
     notFoodReason: typeof value.notFoodReason === "string" ? value.notFoodReason : null,
     mealName: String(value.mealName ?? restaurantInput ?? "Meal"),
     size: mealSize,
+    sizeReason:
+      typeof value.sizeReason === "string" && value.sizeReason.trim()
+        ? value.sizeReason.trim()
+        : "",
     quarterVisible: value.quarterVisible === true,
     items: items
       .map((item) => {

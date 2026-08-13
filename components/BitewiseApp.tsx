@@ -61,8 +61,8 @@ const DISH_HINTS = [
 
 const ANALYZE_STEPS = [
   "Identifying the food on the plate…",
-  "Judging small, medium, or large…",
-  "Looking up that size, then estimating calories…",
+  "Using visible ingredients as a scale…",
+  "Picking small, medium, or large, then calories…",
 ];
 
 const GROQ_KEY = "nuggetcals-groq-key";
@@ -367,9 +367,9 @@ export function BitewiseApp() {
             </p>
             <p>
               <strong>Look up the size</strong>
-              Official small / medium / large menu rows when they exist.
-              Homemade food uses a typical serving scaled to that size, or a
-              US quarter as a ruler.
+              AI measures the portion from what it can see — rice scoops,
+              fries, piece count, how full the plate is — then picks small,
+              medium, or large. A US quarter makes that scale tighter.
             </p>
             <p>
               <strong>Estimate the calories</strong>
@@ -688,8 +688,8 @@ export function BitewiseApp() {
               <p className="card-kicker">Reading the plate</p>
               <h2>{ANALYZE_STEPS[step]}</h2>
               <p>
-                AI names the food and whether it looks small, medium, or large.
-                Then NuggetCals looks up that size and estimates calories.
+                AI names the food, then uses visible ingredients as a scale to
+                pick small, medium, or large. Calories come from that size.
               </p>
             </div>
           ) : meal && !meal.isFood ? (
@@ -720,7 +720,7 @@ export function BitewiseApp() {
                   <strong>Identify.</strong> Vision AI names every item on the plate. It does not invent calorie numbers.
                 </li>
                 <li>
-                  <strong>Size.</strong> It also reads small, medium, or large — fry boxes, cups, pile height, or a US quarter as a 24.26 mm ruler.
+                  <strong>Size.</strong> AI uses visible ingredients as a scale — scoops, piece count, how full the plate is, or a US quarter — then picks small, medium, or large.
                 </li>
                 <li>
                   <strong>Calories.</strong> Official S/M/L menu rows when they exist, otherwise published numbers scaled to that size. Tap Small / Medium / Large if it guessed wrong.

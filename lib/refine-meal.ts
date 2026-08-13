@@ -150,11 +150,12 @@ export function refineMealWithPublishedNutrition(
           !line.startsWith("Step 3:"),
       ),
       "Step 1: AI identified the food on the plate.",
-      `Step 2: Identified the size as ${SIZE_LABEL[mealSize]}${
-        chain && usedPublished
-          ? ", then looked up the official menu row for that size."
-          : ", then looked up a typical serving (or a quarter ruler)."
-      }`,
+      meal.assumptions.find((line) => line.startsWith("Step 2: Used visible ingredients")) ??
+        `Step 2: Used visible ingredients as a scale and judged ${SIZE_LABEL[mealSize]}${
+          chain && usedPublished
+            ? ", then looked up the official menu row for that size."
+            : ", then looked up a typical serving (or a quarter ruler)."
+        }`,
       usedPublished
         ? "Step 3: Estimated calories from published nutrition for that size."
         : "Step 3: Published nutrition was not a close match, so the size guess was kept.",
