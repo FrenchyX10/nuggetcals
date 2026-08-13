@@ -217,10 +217,14 @@ export const FOODS: FoodRecord[] = [
   f("4-piece Nuggets", "Wendy's", ["nuggets"], 170, 10, 9, 11, 1, 0, 350, 62, "Wendy's nutrition", "https://www.wendys.com/nutrition-info"),
 
   // Burger King
-  f("Whopper", "Burger King", ["whopper", "burger"], 670, 31, 51, 40, 2, 11, 910, 270, "Burger King nutrition", "https://www.bk.com/nutrition"),
-  f("Whopper with Cheese", "Burger King", ["whopper", "cheeseburger"], 740, 35, 52, 46, 2, 11, 1240, 292, "Burger King nutrition", "https://www.bk.com/nutrition"),
+  f("Hamburger", "Burger King", ["hamburger", "burger"], 250, 13, 29, 10, 1, 6, 490, 99, "Burger King nutrition", "https://www.bk.com/nutrition"),
+  f("Cheeseburger", "Burger King", ["cheeseburger"], 280, 15, 29, 13, 1, 7, 660, 113, "Burger King nutrition", "https://www.bk.com/nutrition"),
+  f("Double Cheeseburger", "Burger King", ["double cheeseburger"], 400, 24, 30, 21, 2, 7, 800, 155, "Burger King nutrition", "https://www.bk.com/nutrition"),
+  f("Whopper Jr", "Burger King", ["whopper jr", "junior whopper"], 310, 13, 27, 18, 1, 6, 390, 155, "Burger King nutrition", "https://www.bk.com/nutrition"),
+  f("Whopper", "Burger King", ["whopper"], 670, 31, 51, 40, 2, 11, 910, 270, "Burger King nutrition", "https://www.bk.com/nutrition"),
+  f("Whopper with Cheese", "Burger King", ["whopper with cheese"], 740, 35, 52, 46, 2, 11, 1240, 292, "Burger King nutrition", "https://www.bk.com/nutrition"),
   f("Chicken Fries, 8 piece", "Burger King", ["chicken fries"], 280, 13, 20, 17, 1, 1, 770, 90, "Burger King nutrition", "https://www.bk.com/nutrition"),
-  f("Medium Fries", "Burger King", ["fries"], 380, 5, 53, 17, 4, 0, 570, 128, "Burger King nutrition", "https://www.bk.com/nutrition"),
+  f("Medium Fries", "Burger King", ["fries", "french fries"], 380, 5, 53, 17, 4, 0, 570, 128, "Burger King nutrition", "https://www.bk.com/nutrition"),
   f("Original Chicken Sandwich", "Burger King", ["chicken sandwich"], 680, 28, 54, 40, 2, 5, 1290, 248, "Burger King nutrition", "https://www.bk.com/nutrition"),
 
   // In-N-Out

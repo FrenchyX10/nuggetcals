@@ -47,7 +47,7 @@ export function analyzeFree(
     return emptyMeal("This photo does not look like a meal.");
   }
 
-  const picked = pickMeal(ranked, matchedChain);
+  const picked = pickMeal(ranked, matchedChain, labels);
   if (picked.length === 0 && matchedChain) {
     const signature = FOODS.filter((item) => item.restaurant === matchedChain).slice(
       0,
@@ -89,9 +89,11 @@ export function analyzeFree(
     options.caption
       ? `On-device AI described the photo as: “${options.caption}”.`
       : "On-device AI looked at the photo. No API key and nothing is sent to a paid service.",
-    options.portionGrams
-      ? `Portion was estimated from how much of the plate is filled (~${options.portionGrams}g for the main item).`
-      : "A typical published serving was used for size.",
+    matchedChain
+      ? `Used the official ${matchedChain} 1-serving number. Fast-food items are not scaled up from the photo.`
+      : options.portionGrams
+        ? `Homemade portion was estimated from the photo (~${options.portionGrams}g).`
+        : "A typical published serving was used for size.",
     "Use the portion slider if you did not eat the whole plate.",
   ];
 
@@ -120,11 +122,9 @@ export function analyzeFree(
     method,
     items,
     assumptions,
-    precisionNotes: options.portionGrams
-      ? `Calories are published numbers scaled to the size seen in the photo (~${options.portionGrams}g). Tap a better dish below if the name is wrong.`
-      : matchedChain
-        ? `Calories come from published ${matchedChain} nutrition. If the dish is wrong, tap a better match below.`
-        : "Calories are published portions for what the on-device model saw. Type the restaurant or dish name for a closer match.",
+    precisionNotes: matchedChain
+      ? `Calories are the official ${matchedChain} serving, not a photo size-guess. Tap the exact menu item below if this is the wrong sandwich.`
+      : "Calories are a published homemade serving, only slightly adjusted for how full the plate looks.",
     sources: uniqueSources(picked.map((item) => item.record)),
   };
 }
@@ -176,7 +176,37 @@ function scoreRecord(
   }
 
   best += hintAdjustment(record, dishHint, labels);
+  best += sizeBias(record, labels, dishHint);
   return best;
+}
+
+function sizeBias(
+  record: FoodRecord,
+  labels: FoodLabel[],
+  dishHint: string,
+) {
+  const text = normalizeName(`${labels[0]?.label ?? ""} ${dishHint}`);
+  const name = normalizeName(record.name);
+  const genericBurger = /\b(hamburger|cheeseburger|burger)\b/.test(text);
+  const saysWhopper = text.includes("whopper");
+  const saysDouble = text.includes("double") || text.includes("baconator");
+  const saysJr = text.includes("jr") || text.includes("junior") || text.includes("small");
+
+  if (genericBurger && !saysWhopper && !saysDouble && !saysJr) {
+    if (
+      name.includes("whopper") ||
+      name.includes("baconator") ||
+      name.includes("double") ||
+      name.includes("big mac") ||
+      name.includes("quarter pounder") ||
+      name.includes("dave")
+    ) {
+      return -0.45;
+    }
+    if (name === "hamburger" || name === "cheeseburger") return 0.25;
+  }
+  if (saysJr && name.includes("whopper") && !name.includes("jr")) return -0.4;
+  return 0;
 }
 
 function hintAdjustment(
@@ -255,18 +285,24 @@ function tokenOverlap(a: string, b: string) {
 function pickMeal(
   ranked: { record: FoodRecord; score: number }[],
   restaurant: string | null,
+  labels: FoodLabel[],
 ) {
+  const labelText = labels.map((item) => normalizeName(item.label)).join(" ");
+  const mentionedSide = SIDES.some((group) =>
+    group.some((word) => labelText.includes(word)),
+  );
   const picked: { record: FoodRecord; score: number }[] = [];
   for (const candidate of ranked) {
     if (picked.length === 0) {
       picked.push(candidate);
       continue;
     }
-    if (picked.length >= 3) break;
-    if (candidate.score < (picked[0].score) * 0.62) break;
+    if (restaurant && !mentionedSide) break;
+    if (picked.length >= 2) break;
+    if (candidate.score < picked[0].score * 0.72) break;
     if (sameDish(picked[0].record, candidate.record)) continue;
     if (restaurant && candidate.record.restaurant !== restaurant) continue;
-    if (isLikelySide(candidate.record) || isLikelyCombo(picked[0].record, candidate.record)) {
+    if (mentionedSide && isLikelySide(candidate.record)) {
       picked.push(candidate);
     }
   }
@@ -301,15 +337,20 @@ function toItem(
   restaurant: string | null,
   portionGrams?: number,
 ): FoodItem {
-  const grams =
-    portionGrams && portionGrams > 40
-      ? Math.round(portionGrams)
-      : record.grams;
+  const official = Boolean(restaurant && record.restaurant === restaurant);
+  let grams = record.grams;
+  if (!official && portionGrams && portionGrams > 40) {
+    const rawScale = portionGrams / Math.max(record.grams, 1);
+    const scale = clamp(rawScale, 0.8, 1.2);
+    grams = Math.round(record.grams * scale);
+  }
   const scale = grams / Math.max(record.grams, 1);
   return {
     name: record.name,
     brandOrRestaurantItem: record.restaurant,
-    portionDescription: `${grams}g estimated from the photo`,
+    portionDescription: official
+      ? `1 official ${record.restaurant} serving · ${record.grams}g`
+      : `${grams}g estimated from the photo`,
     estimatedGrams: grams,
     calories: Math.round(record.calories * scale),
     proteinG: round1(record.proteinG * scale),
@@ -324,10 +365,9 @@ function toItem(
       : record.source.startsWith("USDA")
         ? "usda"
         : "nutrition_database",
-    notes:
-      restaurant && record.restaurant === restaurant
-        ? `Published ${restaurant} nutrition scaled to ${grams}g`
-        : `${record.source} scaled to ${grams}g`,
+    notes: official
+      ? `Official ${restaurant} menu calories — not scaled from the photo`
+      : `${record.source}, size kept close to a normal serving`,
   };
 }
 
