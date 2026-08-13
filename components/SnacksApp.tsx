@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { addHistory, loadHistory, todayTotals, type HistoryEntry } from "@/lib/history";
 import { grams, kcal } from "@/lib/format";
 import { loadPlan } from "@/lib/plan";
+import { prepareImage } from "@/lib/image";
 import {
   SNACK_CATEGORIES,
   SNACKS,
@@ -17,6 +18,8 @@ import { historyFromSnack } from "@/lib/snack-log";
 const GROQ_KEY = "nuggetcals-groq-key";
 
 export function SnacksApp() {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [planCalories, setPlanCalories] = useState(2000);
   const [query, setQuery] = useState("");
@@ -28,6 +31,10 @@ export function SnacksApp() {
   const [remote, setRemote] = useState<SnackRecord[]>([]);
   const [reason, setReason] = useState("");
   const [addedName, setAddedName] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [thumbnail, setThumbnail] = useState<string | null>(null);
+  const [imageBase64, setImageBase64] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState(false);
 
   useEffect(() => {
     setHistory(loadHistory());
@@ -41,12 +48,31 @@ export function SnacksApp() {
     () => searchLocalSnacks(query, category),
     [query, category],
   );
-  const shown = remote.length > 0 && query.trim().length >= 2 ? remote : local;
+  const shown = remote.length > 0 ? remote : local;
+
+  async function onFile(file: File | undefined) {
+    if (!file) return;
+    setError(null);
+    try {
+      const prepared = await prepareImage(file);
+      setPreviewUrl(prepared.previewUrl);
+      setThumbnail(prepared.thumbnail);
+      setImageBase64(prepared.base64);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not read that photo.");
+    }
+  }
+
+  function clearPhoto() {
+    setPreviewUrl(null);
+    setThumbnail(null);
+    setImageBase64(null);
+  }
 
   async function lookup() {
     const text = query.trim();
-    if (text.length < 2) {
-      setError("Type a chip or snack name, like Cool Ranch Doritos.");
+    if (!imageBase64 && text.length < 2) {
+      setError("Type a snack name or upload a bag photo.");
       return;
     }
     setBusy(true);
@@ -56,16 +82,23 @@ export function SnacksApp() {
       const response = await fetch("/api/snack", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: text, groqKey }),
+        body: JSON.stringify({
+          query: text,
+          groqKey,
+          imageBase64: imageBase64 ?? "",
+        }),
       });
       const data = (await response.json()) as {
         snacks?: SnackRecord[];
         picked?: number;
         reason?: string;
+        query?: string;
+        identified?: string;
         error?: string;
         message?: string;
       };
-      if (!response.ok) throw new Error(data.error || "Snack lookup failed.");
+      if (!response.ok) throw new Error(data.message || data.error || "Snack lookup failed.");
+      if (data.identified && !text) setQuery(data.identified);
       const snacks = data.snacks ?? [];
       if (snacks.length === 0) {
         setRemote([]);
@@ -79,6 +112,7 @@ export function SnacksApp() {
       ].filter(Boolean);
       setRemote(ordered);
       setReason(data.reason || "Matched a published snack label.");
+      setCategory("all");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Snack lookup failed.");
     } finally {
@@ -87,7 +121,7 @@ export function SnacksApp() {
   }
 
   function addSnack(snack: SnackRecord) {
-    const entry = historyFromSnack(snack, servings);
+    const entry = historyFromSnack(snack, servings, thumbnail ?? undefined);
     const next = addHistory(entry);
     setHistory(next);
     setAddedName(snack.name);
@@ -112,16 +146,16 @@ export function SnacksApp() {
               to today
             </h1>
             <p className="lede">
-              Tap a bag from the list, or type a name. AI matches it to USDA
-              FoodData Central and brand labels, then adds those calories to
+              Upload a bag photo or type a name. AI reads the label, then
+              matches USDA and brand nutrition so the snack can be added to
               your day.
             </p>
           </div>
           <aside className="hero-aside">
             <p>
-              <strong>Published nutrition</strong>
-              Calories come from branded labels and USDA FoodData Central, not
-              a photo guess.
+              <strong>Photo or search</strong>
+              Snap the bag. Vision names the snack, then published labels
+              supply the calories.
             </p>
             <p>
               <strong>Adds to the same day</strong>
@@ -137,10 +171,53 @@ export function SnacksApp() {
 
         <section className="workspace snack-workspace">
           <div className="composer">
+            <button
+              type="button"
+              className={`dropzone ${dragOver ? "is-over" : ""} ${previewUrl ? "has-image" : ""}`}
+              onClick={() => fileRef.current?.click()}
+              onDragOver={(event) => {
+                event.preventDefault();
+                setDragOver(true);
+              }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={(event) => {
+                event.preventDefault();
+                setDragOver(false);
+                void onFile(event.dataTransfer.files[0]);
+              }}
+            >
+              {previewUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={previewUrl} alt="Snack bag preview" />
+              ) : (
+                <div className="drop-copy">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img className="nugget-float" src="/nugget.jpg" alt="" />
+                  <span className="drop-kicker">Drop a snack photo</span>
+                  <strong>Tap to snap the bag</strong>
+                  <small>JPG or PNG · photo of the bag or wrapper works best</small>
+                </div>
+              )}
+            </button>
+
+            <div className="photo-actions">
+              <button type="button" className="ghost" onClick={() => fileRef.current?.click()}>
+                Choose photo
+              </button>
+              <button type="button" className="ghost" onClick={() => cameraRef.current?.click()}>
+                Use camera
+              </button>
+              {previewUrl ? (
+                <button type="button" className="ghost" onClick={clearPhoto}>
+                  Clear
+                </button>
+              ) : null}
+            </div>
+
             <label className="field">
               <span>
-                Look up a snack{" "}
-                <em>uses USDA + brand data online</em>
+                Or type the snack{" "}
+                <em>brand + flavor finds more labels</em>
               </span>
               <input
                 value={query}
@@ -152,20 +229,24 @@ export function SnacksApp() {
                 onKeyDown={(event) => {
                   if (event.key === "Enter") void lookup();
                 }}
-                placeholder="Cool Ranch Doritos, Flamin' Hot Cheetos, Oreo…"
+                placeholder="Takis Fuego, Cheez-It, Pop-Tarts…"
                 maxLength={80}
               />
             </label>
-            <div className="photo-actions">
-              <button
-                type="button"
-                className="analyze snack-search"
-                disabled={busy || query.trim().length < 2}
-                onClick={() => void lookup()}
-              >
-                {busy ? "Looking up published labels…" : "Search USDA / brand labels"}
-              </button>
-            </div>
+            <button
+              type="button"
+              className="analyze snack-search"
+              disabled={busy || (!imageBase64 && query.trim().length < 2)}
+              onClick={() => void lookup()}
+            >
+              {busy
+                ? imageBase64
+                  ? "Reading the bag and searching labels…"
+                  : "Searching USDA and brand labels…"
+                : imageBase64
+                  ? "Identify bag and find calories"
+                  : "Search USDA / brand labels"}
+            </button>
             {reason ? <p className="hint">{reason}</p> : null}
             {error ? <p className="error">{error}</p> : null}
 
@@ -188,6 +269,28 @@ export function SnacksApp() {
                 ))}
               </div>
             </div>
+
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/*"
+              hidden
+              onChange={(event) => {
+                void onFile(event.target.files?.[0]);
+                event.target.value = "";
+              }}
+            />
+            <input
+              ref={cameraRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              hidden
+              onChange={(event) => {
+                void onFile(event.target.files?.[0]);
+                event.target.value = "";
+              }}
+            />
           </div>
 
           <aside className="side">
@@ -263,14 +366,14 @@ export function SnacksApp() {
         </ul>
         {shown.length === 0 ? (
           <p className="empty">
-            No snacks in that filter. Search USDA for a brand name.
+            Nothing matched. Upload the bag or search the brand plus flavor.
           </p>
         ) : null}
 
         <p className="hint snack-foot">
-          Showing {shown.length === SNACKS.length ? "the built-in chip and snack list" : `${shown.length} matches`}.
-          Search uses USDA FoodData Central branded foods
-          {groqKey ? " and Groq to pick the closest label" : ""}.
+          Showing {remote.length > 0 ? `${shown.length} online matches` : shown.length === SNACKS.length ? "the built-in chip and snack list" : `${shown.length} list matches`}.
+          Search now uses USDA FoodData Central and Open Food Facts together
+          {groqKey ? ", plus Groq to read a bag photo" : ""}.
         </p>
       </main>
 

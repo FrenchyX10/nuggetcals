@@ -62,12 +62,16 @@ export function mealFromSnack(snack: SnackRecord, servings = 1): MealAnalysis {
   };
 }
 
-export function historyFromSnack(snack: SnackRecord, servings = 1): HistoryEntry {
+export function historyFromSnack(
+  snack: SnackRecord,
+  servings = 1,
+  thumbnail = SNACK_THUMB,
+): HistoryEntry {
   const meal = mealFromSnack(snack, servings);
   return {
     id: crypto.randomUUID(),
     createdAt: new Date().toISOString(),
-    thumbnail: SNACK_THUMB,
+    thumbnail,
     mealName: meal.mealName,
     restaurant: meal.restaurant ?? "Snack",
     totalCalories: meal.totalCalories,
