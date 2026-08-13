@@ -16,7 +16,7 @@ export type HistoryEntry = {
 };
 
 const KEY = "bitewise-history-v1";
-const MAX = 24;
+const MAX = 40;
 
 function canUseStorage() {
   return typeof window !== "undefined" && "localStorage" in window;

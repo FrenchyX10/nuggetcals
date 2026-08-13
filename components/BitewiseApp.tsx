@@ -538,8 +538,10 @@ export function BitewiseApp() {
               <p className="hint">Upload a new photo to analyze. Opening a past scan only shows saved results.</p>
             ) : null}
             <p className="hint">
-              Logging a bag of chips?{" "}
-              <a href="/snacks">Open Chips & snacks</a>
+              Also log{" "}
+              <a href="/snacks">snacks</a>,{" "}
+              <a href="/homemade">homemade</a>, or{" "}
+              <a href="/drinks">drinks</a>.
             </p>
             {error ? <p className="error">{error}</p> : null}
 

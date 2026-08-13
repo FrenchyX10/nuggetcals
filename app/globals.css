@@ -148,15 +148,28 @@ input {
   font-size: 1rem;
 }
 
-.snack-jump {
+.page-tabs {
   display: none;
-  margin-right: 8px;
+  gap: 8px;
+  margin: -20px 0 28px;
+  overflow-x: auto;
+}
+
+.page-tabs a {
+  flex: 0 0 auto;
   padding: 8px 12px;
   border: 1px solid var(--line);
   border-radius: 999px;
   text-decoration: none;
   font-size: 0.82rem;
-  color: var(--gold-2);
+  color: var(--ink-soft);
+}
+
+.page-tabs a.is-active {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #1a1208;
+  font-weight: 650;
 }
 
 .hero {
@@ -822,8 +835,8 @@ input {
     display: none;
   }
 
-  .snack-jump {
-    display: inline-flex;
+  .page-tabs {
+    display: flex;
   }
 
   .hero h1 {
@@ -914,4 +927,79 @@ input {
 
 .snack-foot {
   margin-top: 22px;
+}
+
+.ingredient-lines {
+  display: grid;
+  gap: 10px;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ingredient-lines li {
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #18130f;
+}
+
+.ingredient-lines strong {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.ingredient-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.ingredient-controls input,
+.ingredient-controls select {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #120e0b;
+  color: var(--ink);
+  padding: 8px 10px;
+}
+
+.ingredient-controls input {
+  width: 72px;
+}
+
+.ingredient-controls em {
+  font-style: normal;
+  color: var(--gold-2);
+}
+
+.homemade-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 18px 0 6px;
+  font-size: 1.1rem;
+}
+
+.homemade-total strong {
+  font-family: var(--font-serif);
+  font-size: 2rem;
+  color: var(--gold-2);
+}
+
+.quick-macros {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.custom-drink {
+  margin-top: 18px;
+}
+
+@media (max-width: 860px) {
+  .quick-macros {
+    grid-template-columns: 1fr;
+  }
 }
