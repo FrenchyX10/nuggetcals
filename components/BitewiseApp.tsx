@@ -18,6 +18,7 @@ import { confidenceLabel, grams, kcal, methodLabel } from "@/lib/format";
 import { DAILY_PLANS, loadPlan, savePlan } from "@/lib/plan";
 import type { FoodRecord } from "@/lib/nutrition-data";
 import type { MealAnalysis } from "@/lib/schema";
+import { SiteHeader } from "@/components/SiteHeader";
 import {
   applyPortionSize,
   inferMealSize,
@@ -325,25 +326,11 @@ export function BitewiseApp() {
 
   return (
     <div className="page-shell">
-      <header className="topbar">
-        <a className="brand" href="#top">
-          <span className="mark" aria-hidden>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/nugget.jpg" alt="" />
-          </span>
-          Nugget<b>Cals</b>
-        </a>
-        <nav className="nav-links">
-          <a href="#how">How it works</a>
-          <a href="#log">Today</a>
-        </nav>
-        <div className="today-pill">
-          <span>Today</span>
-          <strong>
-            {kcal(today.calories)} / {kcal(planCalories)}
-          </strong>
-        </div>
-      </header>
+      <SiteHeader
+        todayCalories={today.calories}
+        planCalories={planCalories}
+        active="meals"
+      />
 
       <main>
         <section className="hero" id="top">
@@ -550,6 +537,10 @@ export function BitewiseApp() {
             {!imageBase64 ? (
               <p className="hint">Upload a new photo to analyze. Opening a past scan only shows saved results.</p>
             ) : null}
+            <p className="hint">
+              Logging a bag of chips?{" "}
+              <a href="/snacks">Open Chips & snacks</a>
+            </p>
             {error ? <p className="error">{error}</p> : null}
 
             <input

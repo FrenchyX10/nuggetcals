@@ -10,6 +10,8 @@ NuggetCals photographs a real meal and estimates calories in three steps: identi
 4. Size comes next: official S/M/L menu rows when they exist, a typical homemade serving scaled to that size, or a US quarter (24.26 mm) as a ruler.
 5. Calories are published restaurant / USDA numbers for that size. Tap Small / Medium / Large if the guess is wrong.
 
+There is also a **Chips & snacks** page (`/snacks`). Tap a bag or search USDA FoodData Central for a brand label, then add those calories to the same daily log.
+
 Add a free Groq key in the app so vision can actually see the plate. Create one at [console.groq.com/keys](https://console.groq.com/keys) — no credit card.
 
 ## Setup

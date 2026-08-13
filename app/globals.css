@@ -121,8 +121,13 @@ input {
   text-decoration: none;
 }
 
-.nav-links a:hover {
+.nav-links a:hover,
+.nav-links a.is-active {
   color: var(--gold-2);
+}
+
+.nav-links a.is-active {
+  font-weight: 650;
 }
 
 .today-pill {
@@ -141,6 +146,17 @@ input {
 .today-pill strong {
   color: var(--gold-2);
   font-size: 1rem;
+}
+
+.snack-jump {
+  display: none;
+  margin-right: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  text-decoration: none;
+  font-size: 0.82rem;
+  color: var(--gold-2);
 }
 
 .hero {
@@ -806,6 +822,10 @@ input {
     display: none;
   }
 
+  .snack-jump {
+    display: inline-flex;
+  }
+
   .hero h1 {
     max-width: none;
   }
@@ -817,4 +837,81 @@ input {
   .calorie-block {
     justify-items: start;
   }
+}
+
+.snack-workspace {
+  margin-bottom: 20px;
+}
+
+.snack-search {
+  margin-top: 0;
+}
+
+.snack-cats {
+  margin: 8px 0 20px;
+}
+
+.snack-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.snack-card {
+  display: grid;
+  gap: 8px;
+  min-height: 100%;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--card);
+}
+
+.snack-card h2 {
+  margin: 4px 0 0;
+  font-family: var(--font-serif);
+  font-size: 1.2rem;
+  font-weight: 540;
+  letter-spacing: -0.03em;
+}
+
+.snack-meta,
+.snack-macros {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.86rem;
+}
+
+.snack-cals {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 4px 0 0;
+}
+
+.snack-cals strong {
+  font-family: var(--font-serif);
+  font-size: 2rem;
+  color: var(--gold-2);
+  line-height: 1;
+}
+
+.snack-cals small {
+  color: var(--muted);
+}
+
+.snack-source {
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+}
+
+.snack-add {
+  margin-top: 6px;
+}
+
+.snack-foot {
+  margin-top: 22px;
 }
