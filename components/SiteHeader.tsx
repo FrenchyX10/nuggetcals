@@ -2,11 +2,11 @@ import { kcal } from "@/lib/format";
 
 export type SitePage = "meals" | "snacks" | "homemade" | "drinks";
 
-const LINKS: { id: SitePage; href: string; label: string }[] = [
-  { id: "meals", href: "/", label: "Meals" },
-  { id: "snacks", href: "/snacks", label: "Snacks" },
-  { id: "homemade", href: "/homemade", label: "Homemade" },
-  { id: "drinks", href: "/drinks", label: "Drinks" },
+const LINKS: { id: SitePage; href: string; label: string; short: string }[] = [
+  { id: "meals", href: "/", label: "Meals", short: "Meals" },
+  { id: "snacks", href: "/snacks", label: "Snacks", short: "Snacks" },
+  { id: "homemade", href: "/homemade", label: "Homemade", short: "Home" },
+  { id: "drinks", href: "/drinks", label: "Drinks", short: "Drinks" },
 ];
 
 export function SiteHeader({
@@ -38,23 +38,23 @@ export function SiteHeader({
               {link.label}
             </a>
           ))}
-          <a href="/#log">Today</a>
         </nav>
-        <a className="today-pill" href="/#log">
+        <a className="today-pill" href={active === "meals" ? "/#log" : `${LINKS.find((link) => link.id === active)?.href ?? "/"}#log`}>
           <span>Today</span>
           <strong>
-            {kcal(todayCalories)} / {kcal(planCalories)}
+            {kcal(todayCalories)}
+            <i> / {kcal(planCalories)}</i>
           </strong>
         </a>
       </header>
-      <nav className="page-tabs" aria-label="Sections">
+      <nav className="dock" aria-label="Main">
         {LINKS.map((link) => (
           <a
             key={link.id}
             href={link.href}
             className={active === link.id ? "is-active" : undefined}
           >
-            {link.label}
+            {link.short}
           </a>
         ))}
       </nav>
