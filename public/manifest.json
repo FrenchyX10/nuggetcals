@@ -1,7 +1,7 @@
 {
   "name": "NuggetCals",
   "short_name": "NuggetCals",
-  "description": "Snap a meal photo and get calorie estimates.",
+  "description": "Identify the plate, look up the size, then estimate calories.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#120e0b",

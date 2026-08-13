@@ -16,7 +16,7 @@ const fraunces = Fraunces({
 export const metadata: Metadata = {
   title: "NuggetCals — snap a meal, get the calories",
   description:
-    "Upload a real food photo. NuggetCals estimates the dish, the portion, and the calories — no account, no API key.",
+    "Upload a real food photo. NuggetCals identifies the plate, looks up the serving size, then estimates calories.",
   applicationName: "NuggetCals",
   manifest: "/manifest.json",
   appleWebApp: {

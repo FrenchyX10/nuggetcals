@@ -88,8 +88,8 @@ export function analyzeFree(
         : `Kept the restaurant you typed (${restaurant}). It is not in the built-in chain list, so generic published portions were used.`
       : "No restaurant was given, so generic published portions were used.",
     options.caption
-      ? `On-device AI described the photo as: “${options.caption}”.`
-      : "On-device AI looked at the photo. No API key and nothing is sent to a paid service.",
+      ? `AI identified the plate as: “${options.caption}”.`
+      : "AI identified the food, then serving size was looked up from published numbers.",
     matchedChain
       ? `Used the official ${matchedChain} 1-serving number. Fast-food items are not scaled up from the photo.`
       : options.quarterFound

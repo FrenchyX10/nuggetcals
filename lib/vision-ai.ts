@@ -2,18 +2,16 @@ import { mealAnalysisSchema, type MealAnalysis } from "@/lib/schema";
 import { displayRestaurant } from "@/lib/nutrition-data";
 import { refineMealWithPublishedNutrition } from "@/lib/refine-meal";
 
-const SYSTEM = `You are a careful nutrition analyst looking at a real photo of food.
+const SYSTEM = `You only identify food in a photo. Do not invent calorie numbers.
 
 Rules:
-- Identify every edible item that is actually visible. Be specific: blueberry pancakes vs fried chicken vs hamburger.
-- Never confuse pancakes/waffles with fried chicken. Never call chicken a burger.
-- If a US quarter coin is visible, it is exactly 24.26 mm (0.955 in) across. Use it as a ruler for homemade food grams.
-- Dinner plates are usually 10–11 inches if no coin is present.
-- If a restaurant name is given (Burger King, McDonald's, etc.), match the closest official menu item and use the official ONE serving calories. Do not scale a Whopper up because the photo is a close-up. Do not add fries or a drink unless they are clearly in the photo.
-- If the photo is a generic hamburger at Burger King, pick Hamburger or Cheeseburger, not a Whopper, unless it clearly is a Whopper.
-- Hidden calories for homemade food: oil, butter, mayo, sauce, cheese, fried coating.
+- Name every edible item you can actually see. Be specific: blueberry pancakes vs fried chicken vs hamburger.
+- Never confuse pancakes or waffles with fried chicken. Never call chicken a burger.
+- Do not add fries, drinks, or sides unless they are clearly in the photo.
+- If a US quarter is visible, set quarterVisible true. A quarter is 24.26 mm across.
+- If a restaurant is named, pick the closest real menu item name (Hamburger, not Whopper, unless it clearly is a Whopper).
 - If it is not food, set isFood false.
-- Reply with a single JSON object only. No markdown fences. No extra text.`;
+- Reply with one small JSON object only. No markdown. No extra text.`;
 
 export async function analyzeWithFreeVision(options: {
   imageBase64: string;
@@ -28,17 +26,86 @@ export async function analyzeWithFreeVision(options: {
       ? await callGroq(options)
       : await callGemini(options);
 
-  const parsed = extractJson(raw);
-  const checked = mealAnalysisSchema.safeParse(normalizeMeal(parsed, options.restaurant));
-  if (!checked.success) {
-    throw new Error("The vision model returned an unusable result. Try another photo.");
+  const identified = parseIdentity(raw, options.restaurant);
+  if (!identified.isFood) {
+    return {
+      mealName: "Not a meal",
+      restaurant: displayRestaurant(options.restaurant),
+      matchedMenuItem: null,
+      isFood: false,
+      notFoodReason: identified.notFoodReason ?? "That photo does not look like food.",
+      totalCalories: 0,
+      calorieRangeLow: 0,
+      calorieRangeHigh: 0,
+      proteinG: 0,
+      carbsG: 0,
+      fatG: 0,
+      fiberG: 0,
+      sugarG: 0,
+      sodiumMg: 0,
+      overallConfidence: 0.2,
+      method: "visual_estimate",
+      items: [],
+      assumptions: [],
+      precisionNotes: identified.notFoodReason ?? "",
+      sources: [],
+    };
   }
 
-  const refined = refineMealWithPublishedNutrition(
-    checked.data,
-    options.restaurant,
-    options.dishHint,
-  );
+  const identifiedItems =
+    identified.items.length > 0
+      ? identified.items
+      : [{ name: identified.mealName || "Meal", notes: "", estimatedGrams: 0 }];
+  const hint = [options.dishHint, ...identifiedItems.map((item) => item.name)]
+    .filter(Boolean)
+    .join(" ");
+  const skeleton = mealAnalysisSchema.parse({
+    mealName: identified.mealName,
+    restaurant: displayRestaurant(options.restaurant),
+    matchedMenuItem: identifiedItems[0]?.name ?? identified.mealName,
+    isFood: true,
+    notFoodReason: null,
+    totalCalories: 0,
+    calorieRangeLow: 0,
+    calorieRangeHigh: 0,
+    proteinG: 0,
+    carbsG: 0,
+    fatG: 0,
+    fiberG: 0,
+    sugarG: 0,
+    sodiumMg: 0,
+    overallConfidence: 0.72,
+    method: options.restaurant ? "restaurant_menu" : "usda",
+    items: identifiedItems.map((item) => ({
+      name: item.name,
+      brandOrRestaurantItem: options.restaurant || null,
+      portionDescription: item.notes || "identified in photo",
+      estimatedGrams: item.estimatedGrams || 0,
+      calories: 0,
+      proteinG: 0,
+      carbsG: 0,
+      fatG: 0,
+      fiberG: 0,
+      sugarG: 0,
+      sodiumMg: 0,
+      confidence: 0.72,
+      dataSource: "visual_estimate",
+      notes: item.notes,
+    })),
+    assumptions: [
+      "Step 1: AI identified the food on the plate.",
+      "Step 2: Looked up serving size (official menu, a US quarter, or a typical serving).",
+      "Step 3: Estimated calories from published nutrition for that size.",
+      identified.quarterVisible || options.quarterFound
+        ? "A US quarter was used as a 24.26 mm ruler for homemade size."
+        : "No quarter was used.",
+    ],
+    precisionNotes:
+      "Identify → size lookup → calorie estimate. Chain meals use official 1-serving numbers.",
+    sources: [],
+  });
+
+  const refined = refineMealWithPublishedNutrition(skeleton, options.restaurant, hint);
   refined.restaurant = displayRestaurant(options.restaurant) ?? refined.restaurant;
   return refined;
 }
@@ -173,24 +240,37 @@ async function callGemini(options: {
 }
 
 function userPrompt(restaurant: string, dishHint: string, quarterFound = false) {
-  return `Analyze this real-life food photo carefully.
+  return `Step 1 only: identify the food in this photo. Do not calculate calories.
 
-Restaurant name typed by the user: ${restaurant || "(none)"}
-What the user thinks it is: ${dishHint || "(not specified)"}
-A US quarter detector ${quarterFound ? "THINKS a quarter is in the photo" : "did not find a quarter"}. Confirm by looking. If a quarter is visible, use 24.26 mm as the scale.
+Restaurant typed by the user: ${restaurant || "(none)"}
+User hint: ${dishHint || "(none)"}
+Quarter detector: ${quarterFound ? "possible quarter in the photo" : "no quarter detected"}. Confirm visually.
 
-If a restaurant is named, use official 1-serving menu calories. If homemade and a quarter is visible, estimate grams from the coin.
+Return only this JSON:
+{"isFood":true,"notFoodReason":null,"mealName":"short name","quarterVisible":false,"items":[{"name":"specific food name","notes":"what you see","estimatedGrams":180}]}
 
-Return a JSON object with exactly these keys:
-mealName, restaurant, matchedMenuItem, isFood, notFoodReason, totalCalories, calorieRangeLow, calorieRangeHigh, proteinG, carbsG, fatG, fiberG, sugarG, sodiumMg, overallConfidence, method, items, assumptions, precisionNotes, sources.
+estimatedGrams is a size guess from a quarter (24.26 mm) or a typical plate. If a restaurant is named, still identify the menu item; calories will be looked up next.`;
+}
 
-items is an array of:
-name, brandOrRestaurantItem, portionDescription, estimatedGrams, calories, proteinG, carbsG, fatG, fiberG, sugarG, sodiumMg, confidence, dataSource, notes.
-
-method must be one of: restaurant_menu, usda, hybrid, visual_estimate.
-dataSource must be one of: restaurant_official, usda, nutrition_database, visual_estimate.
-restaurant should be the name the user typed if they typed one.
-sources is an array of {title, url}.`;
+function parseIdentity(text: string, restaurantInput: string) {
+  const value = extractJson(text);
+  const items = Array.isArray(value.items) ? value.items : [];
+  return {
+    isFood: value.isFood !== false,
+    notFoodReason: typeof value.notFoodReason === "string" ? value.notFoodReason : null,
+    mealName: String(value.mealName ?? restaurantInput ?? "Meal"),
+    quarterVisible: value.quarterVisible === true,
+    items: items
+      .map((item) => {
+        const row = item && typeof item === "object" ? (item as Record<string, unknown>) : {};
+        return {
+          name: String(row.name ?? "Food"),
+          notes: String(row.notes ?? ""),
+          estimatedGrams: num(row.estimatedGrams, 0),
+        };
+      })
+      .filter((item) => item.name.length > 0),
+  };
 }
 
 function extractJson(text: string) {
@@ -204,81 +284,7 @@ function extractJson(text: string) {
   return JSON.parse(slice) as Record<string, unknown>;
 }
 
-function normalizeMeal(value: Record<string, unknown>, restaurantInput: string) {
-  const items = Array.isArray(value.items) ? value.items : [];
-  return {
-    mealName: String(value.mealName ?? "Meal"),
-    restaurant:
-      (typeof value.restaurant === "string" && value.restaurant) ||
-      restaurantInput ||
-      null,
-    matchedMenuItem:
-      typeof value.matchedMenuItem === "string" ? value.matchedMenuItem : null,
-    isFood: value.isFood !== false,
-    notFoodReason: typeof value.notFoodReason === "string" ? value.notFoodReason : null,
-    totalCalories: num(value.totalCalories),
-    calorieRangeLow: num(value.calorieRangeLow, num(value.totalCalories) * 0.8),
-    calorieRangeHigh: num(value.calorieRangeHigh, num(value.totalCalories) * 1.2),
-    proteinG: num(value.proteinG),
-    carbsG: num(value.carbsG),
-    fatG: num(value.fatG),
-    fiberG: num(value.fiberG),
-    sugarG: num(value.sugarG),
-    sodiumMg: num(value.sodiumMg),
-    overallConfidence: clamp(num(value.overallConfidence, 0.55), 0, 1),
-    method: oneOf(value.method, ["restaurant_menu", "usda", "hybrid", "visual_estimate"], "visual_estimate"),
-    items: items.map((item) => normalizeItem(item)),
-    assumptions: Array.isArray(value.assumptions)
-      ? value.assumptions.map((line) => String(line))
-      : [],
-    precisionNotes: String(value.precisionNotes ?? ""),
-    sources: Array.isArray(value.sources)
-      ? value.sources.flatMap((source) => {
-          if (!source || typeof source !== "object") return [];
-          const row = source as { title?: unknown; url?: unknown };
-          if (typeof row.url !== "string") return [];
-          return [{ title: String(row.title ?? row.url), url: row.url }];
-        })
-      : [],
-  };
-}
-
-function normalizeItem(item: unknown) {
-  const row = item && typeof item === "object" ? (item as Record<string, unknown>) : {};
-  return {
-    name: String(row.name ?? "Food"),
-    brandOrRestaurantItem:
-      typeof row.brandOrRestaurantItem === "string" ? row.brandOrRestaurantItem : null,
-    portionDescription: String(row.portionDescription ?? "1 serving"),
-    estimatedGrams: num(row.estimatedGrams, 150),
-    calories: num(row.calories),
-    proteinG: num(row.proteinG),
-    carbsG: num(row.carbsG),
-    fatG: num(row.fatG),
-    fiberG: num(row.fiberG),
-    sugarG: num(row.sugarG),
-    sodiumMg: num(row.sodiumMg),
-    confidence: clamp(num(row.confidence, 0.55), 0, 1),
-    dataSource: oneOf(
-      row.dataSource,
-      ["restaurant_official", "usda", "nutrition_database", "visual_estimate"],
-      "visual_estimate",
-    ),
-    notes: String(row.notes ?? ""),
-  };
-}
-
 function num(value: unknown, fallback = 0) {
   const parsed = typeof value === "number" ? value : Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
-}
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value));
-}
-
-function oneOf<T extends string>(value: unknown, options: T[], fallback: T): T {
-  return typeof value === "string" && options.includes(value as T)
-    ? (value as T)
-    : fallback;
 }

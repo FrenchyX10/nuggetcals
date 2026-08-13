@@ -52,10 +52,9 @@ const DISH_HINTS = [
 ];
 
 const ANALYZE_STEPS = [
-  "Looking at the plate with free vision AI…",
-  "Checking for a quarter to lock the scale…",
-  "Matching restaurant menu or USDA numbers…",
-  "Adding up the meal…",
+  "Identifying the food on the plate…",
+  "Looking up serving size…",
+  "Estimating calories from published nutrition…",
 ];
 
 const GROQ_KEY = "nuggetcals-groq-key";
@@ -319,41 +318,43 @@ export function BitewiseApp() {
       <main>
         <section className="hero" id="top">
           <div>
-            <p className="eyebrow">Snap it. Weigh it with your eyes.</p>
+            <p className="eyebrow">Identify. Size. Calories.</p>
             <h1>
               Count the
               <em> nuggets, stacks, and plates</em>
             </h1>
             <p className="lede">
-              Drop a real food photo. NuggetCals names the dish, estimates how
-              big it is, and gives you calories — on this device, no login.
+              Drop a real food photo. AI identifies the plate, looks up the
+              serving size, then estimates calories from published nutrition.
             </p>
           </div>
           <aside className="hero-aside">
             <p>
-              <strong>No API key</strong>
-              The food model runs in your browser. First scan downloads it once.
+              <strong>Identify the plate</strong>
+              Vision AI names what is actually on the plate — pancakes stay
+              pancakes, chicken stays chicken.
             </p>
             <p>
-              <strong>Restaurant optional</strong>
-              Add Chipotle, Cane&apos;s, or a diner name for menu-style numbers.
+              <strong>Look up the size</strong>
+              Chain meals use official 1-serving sizes. Homemade food uses a
+              typical serving, or a US quarter as a ruler.
             </p>
             <p>
-              <strong>Drop a US quarter in the shot</strong>
-              Lay a quarter next to homemade food. It is 24.26 mm wide, so size
-              (and calories) get much closer.
+              <strong>Estimate the calories</strong>
+              Published restaurant and USDA numbers are scaled to that size.
+              Add a restaurant name for menu-style accuracy.
             </p>
           </aside>
         </section>
 
         {!groqKey ? (
           <section className="setup-card">
-            <p className="card-kicker">Optional · free vision upgrade</p>
-            <h2>Add a free Groq key for much better accuracy</h2>
+            <p className="card-kicker">One-time setup</p>
+            <h2>Add your free Groq key to start identifying plates</h2>
             <p>
-              Groq&apos;s vision model can actually see the food and a quarter
-              in the photo. It is free and does not need a credit card. Create a
-              key at{" "}
+              NuggetCals uses Groq vision to name the food, then looks up size
+              and calories. The key is free and does not need a credit card.
+              Create one at{" "}
               <a href="https://console.groq.com/keys" target="_blank" rel="noreferrer">
                 console.groq.com/keys
               </a>
@@ -375,11 +376,14 @@ export function BitewiseApp() {
               disabled={savingKey || keyDraft.trim().length < 20}
               onClick={() => void saveGroqKey()}
             >
-              {savingKey ? "Saving…" : "Save free key"}
+              {savingKey ? "Saving…" : "Save key"}
             </button>
           </section>
         ) : (
-          <p className="hint">Free Groq vision is on. You can still add a quarter for homemade scale.</p>
+          <p className="hint">
+            Vision AI is on. Identify the plate, look up the size, then estimate
+            calories. Add a quarter next to homemade food for a closer scale.
+          </p>
         )}
 
         <section className="workspace">
@@ -589,7 +593,7 @@ export function BitewiseApp() {
                 <p className="card-kicker">Recent plates</p>
               </div>
               {history.length === 0 ? (
-                <p className="empty">Your scans stay on this device. Nothing is uploaded except the photo you analyze.</p>
+                <p className="empty">No meals logged today. Snap a plate to start counting.</p>
               ) : (
                 <ul>
                   {history.map((entry) => (
@@ -632,7 +636,8 @@ export function BitewiseApp() {
               <p className="card-kicker">Reading the plate</p>
               <h2>{ANALYZE_STEPS[step]}</h2>
               <p>
-                The first run downloads a free food model onto this computer. After that it works offline.
+                AI names the food first. Then NuggetCals looks up serving size
+                and estimates calories from published numbers.
               </p>
             </div>
           ) : meal && !meal.isFood ? (
@@ -656,16 +661,16 @@ export function BitewiseApp() {
           ) : (
             <div className="result-card muted" id="how">
               <p className="card-kicker">How NuggetCals works</p>
-              <h2>See the food. Guess the size. Scale the calories.</h2>
+              <h2>Identify the plate. Look up the size. Estimate calories.</h2>
               <ol className="how-list">
                 <li>
-                  <strong>See the food.</strong> On-device AI describes the photo. No API key.
+                  <strong>Identify.</strong> Vision AI names every item on the plate. It does not invent calorie numbers.
                 </li>
                 <li>
-                  <strong>Estimate the size.</strong> Put a US quarter next to homemade food. The app uses the coin as a ruler, then scales calories.
+                  <strong>Size.</strong> Chain meals use official 1-serving sizes. Homemade food uses a typical serving, or a US quarter as a 24.26 mm ruler.
                 </li>
                 <li>
-                  <strong>Adjust it.</strong> Use <em>I ate</em> if you only finished part of the plate.
+                  <strong>Calories.</strong> Published restaurant and USDA numbers are scaled to that size. Use <em>I ate</em> if you only finished part of the plate.
                 </li>
               </ol>
             </div>

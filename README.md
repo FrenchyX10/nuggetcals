@@ -1,15 +1,16 @@
 # NuggetCals
 
-NuggetCals photographs a real meal and estimates calories. No account. No API key. No credits.
+NuggetCals photographs a real meal and estimates calories in three steps: identify the plate, look up the size, then estimate calories.
 
 ## What it does
 
 1. You upload a JPG/PNG of food (or take one with your phone camera).
 2. Optionally type a restaurant and what the dish is (`chicken`, `bowl`, …).
-3. A food model runs **on this computer**, describes the photo, and estimates portion size from how full the plate is.
-4. Calories come from published restaurant / USDA numbers, scaled to that estimated size.
+3. Vision AI identifies every item on the plate. It does not invent calorie numbers.
+4. Size comes next: official 1-serving chain items, a typical homemade serving, or a US quarter (24.26 mm) as a ruler.
+5. Calories are published restaurant / USDA numbers scaled to that size.
 
-The first analyze downloads a free model once. After that it works without the internet.
+Add a free Groq key in the app so vision can actually see the plate. Create one at [console.groq.com/keys](https://console.groq.com/keys) — no credit card.
 
 ## Setup
 
@@ -29,31 +30,16 @@ Open [http://localhost:3000](http://localhost:3000).
 
 1. Create a free account at [https://vercel.com/signup](https://vercel.com/signup).
 2. Install [Git](https://git-scm.com/download/win) if you do not have it.
-3. In this folder, run:
+3. Push this repo, then import it in Vercel.
 
-```bash
-cd C:\Users\david\bitewise
-npx vercel
-```
-
-4. Log in when it asks. Accept the defaults. Vercel will give you a URL like `https://nuggetcals.vercel.app`.
-5. That URL stays up even when your PC is off.
-
-Optional: in the Vercel dashboard, add your own domain (for example `nuggetcals.com`).
-
-### After it is live
-
-- Open the URL on your phone.
-- In Safari / Chrome, choose **Add to Home Screen**. It opens like an app.
-- First calorie scan still downloads the food model in *that* browser. After that it is fast.
-
-No API keys are required to host it.
+Open the live URL on your phone. In Safari / Chrome, choose **Add to Home Screen**. Paste your Groq key once in the app.
 
 ## Tips
 
-- Type the restaurant for chain-menu calories.
+- Type the restaurant for official chain-menu calories.
 - Tap **Chicken** (or type it) if the photo is chicken.
 - If the name is wrong, tap the right dish under the result.
+- Lay a US quarter next to homemade food for a closer size.
 - Use **I ate** if you only finished part of the plate.
 
 Estimates only — not medical advice.

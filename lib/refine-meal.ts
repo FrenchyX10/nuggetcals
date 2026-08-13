@@ -100,16 +100,22 @@ export function refineMealWithPublishedNutrition(
     sodiumMg: Math.round(totals.sodiumMg),
     method: chain && usedPublished ? "hybrid" : usedPublished ? "usda" : meal.method,
     assumptions: [
-      "A free vision model looked at the photo and estimated each item's size.",
+      ...meal.assumptions.filter(
+        (line) =>
+          !line.startsWith("Step 1:") &&
+          !line.startsWith("Step 2:") &&
+          !line.startsWith("Step 3:"),
+      ),
+      "Step 1: AI identified the food on the plate.",
       chain && usedPublished
-        ? "Chain items use official 1-serving menu calories, not a photo size guess."
-        : usedPublished
-          ? "Calories were scaled from published USDA-style numbers."
-          : "Published nutrition was not a close match, so the model's own calorie estimate was kept.",
-      ...meal.assumptions,
+        ? "Step 2: Looked up the official 1-serving menu size."
+        : "Step 2: Looked up serving size (quarter ruler or a typical serving).",
+      usedPublished
+        ? "Step 3: Estimated calories from published nutrition for that size."
+        : "Step 3: Published nutrition was not a close match, so the size guess was kept.",
     ].slice(0, 6),
     precisionNotes:
-      "The AI identified the food and estimated grams from the plate. Calories are published values scaled to that estimated size, not a random burger default.",
+      "Identify → size lookup → calorie estimate. Chain meals use official 1-serving numbers, not a photo size guess.",
     sources: uniqueSources(meal.sources, refinedItems, chain),
   };
 }
