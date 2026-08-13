@@ -893,7 +893,7 @@ video {
 
   .dock {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     position: fixed;
     left: 10px;
     right: 10px;
@@ -914,7 +914,7 @@ video {
     border-radius: 14px;
     text-decoration: none;
     color: var(--ink-soft);
-    font-size: 0.75rem;
+    font-size: 0.68rem;
     font-weight: 650;
   }
 
@@ -1187,6 +1187,77 @@ video {
   .hero h1 {
     font-size: 5.2rem;
   }
+}
+
+.chart-wrap {
+  margin: 8px 0 12px;
+}
+
+.calorie-chart {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.chart-area {
+  fill: rgba(240, 180, 90, 0.16);
+}
+
+.chart-line {
+  fill: none;
+  stroke: #f0b45a;
+  stroke-width: 2.4;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.chart-bar {
+  fill: rgba(240, 180, 90, 0.55);
+}
+
+.chart-dot {
+  fill: #ffd48a;
+}
+
+.chart-plan {
+  stroke: rgba(246, 236, 220, 0.28);
+  stroke-dasharray: 5 5;
+}
+
+.chart-xlabel,
+.chart-ylabel {
+  fill: #8d7d6a;
+  font-size: 10px;
+}
+
+.chart-xlabel {
+  text-anchor: middle;
+}
+
+.trend-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 8px 0 4px;
+}
+
+.trend-stats div {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #18130f;
+}
+
+.trend-stats span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.trend-stats strong {
+  font-family: var(--font-serif);
+  font-size: 1.35rem;
+  color: var(--gold-2);
 }
 
 .resto-picker {

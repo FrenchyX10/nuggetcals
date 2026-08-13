@@ -16,7 +16,7 @@ export type HistoryEntry = {
 };
 
 const KEY = "bitewise-history-v1";
-const MAX = 40;
+const MAX = 4000;
 
 function canUseStorage() {
   return typeof window !== "undefined" && "localStorage" in window;
@@ -36,7 +36,12 @@ export function loadHistory(): HistoryEntry[] {
 
 export function saveHistory(entries: HistoryEntry[]) {
   if (!canUseStorage()) return;
-  localStorage.setItem(KEY, JSON.stringify(entries.slice(0, MAX)));
+  const next = entries.slice(0, MAX);
+  try {
+    localStorage.setItem(KEY, JSON.stringify(next));
+  } catch {
+    localStorage.setItem(KEY, JSON.stringify(next.slice(0, 800)));
+  }
 }
 
 export function addHistory(entry: HistoryEntry) {
@@ -65,6 +70,41 @@ export function removeHistory(id: string) {
   const next = loadHistory().filter((item) => item.id !== id);
   saveHistory(next);
   return next;
+}
+
+export type HistoryBackup = {
+  version: 1;
+  exportedAt: string;
+  entries: HistoryEntry[];
+};
+
+export function exportHistory(entries: HistoryEntry[]): HistoryBackup {
+  return {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    entries,
+  };
+}
+
+export function importHistory(raw: unknown): HistoryEntry[] {
+  const backup = raw as HistoryBackup | HistoryEntry[];
+  const incoming = Array.isArray(backup)
+    ? backup
+    : Array.isArray(backup?.entries)
+      ? backup.entries
+      : [];
+  const current = loadHistory();
+  const byId = new Map<string, HistoryEntry>();
+  for (const entry of [...current, ...incoming]) {
+    if (entry && typeof entry.id === "string" && typeof entry.createdAt === "string") {
+      byId.set(entry.id, entry);
+    }
+  }
+  const merged = [...byId.values()].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
+  saveHistory(merged);
+  return merged;
 }
 
 export function todayTotals(entries: HistoryEntry[]) {

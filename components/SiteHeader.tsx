@@ -1,12 +1,13 @@
 import { kcal } from "@/lib/format";
 
-export type SitePage = "meals" | "snacks" | "homemade" | "drinks";
+export type SitePage = "meals" | "snacks" | "homemade" | "drinks" | "trends";
 
 const LINKS: { id: SitePage; href: string; label: string; short: string }[] = [
   { id: "meals", href: "/", label: "Meals", short: "Meals" },
   { id: "snacks", href: "/snacks", label: "Snacks", short: "Snacks" },
   { id: "homemade", href: "/homemade", label: "Homemade", short: "Home" },
   { id: "drinks", href: "/drinks", label: "Drinks", short: "Drinks" },
+  { id: "trends", href: "/trends", label: "Trends", short: "Trends" },
 ];
 
 export function SiteHeader({
