@@ -12,6 +12,7 @@ import {
 } from "@/lib/history";
 import { analyzeFree, mealFromRecord, suggestAlternatives } from "@/lib/free-analyze";
 import { inspectMealPhoto } from "@/lib/local-vision";
+import { applyLocalIdentityGuard } from "@/lib/identify-guards";
 import { detectQuarterScale } from "@/lib/quarter-scale";
 import { prepareImage } from "@/lib/image";
 import { confidenceLabel, grams, kcal, methodLabel } from "@/lib/format";
@@ -172,27 +173,43 @@ export function BitewiseApp() {
     setStep(0);
 
     try {
+      const localSight = inspectMealPhoto(
+        previewUrl,
+        restaurant.trim(),
+        dishHint.trim(),
+      ).catch(() => null);
       const quarter = await detectQuarterScale(previewUrl);
       let nextMeal: MealAnalysis | null = null;
 
       if (groqKey) {
-        const response = await fetch("/api/analyze", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            imageBase64,
-            restaurant: restaurant.trim(),
-            dishHint: dishHint.trim(),
-            sizeHint,
-            groqKey,
-            quarterFound: quarter.found,
+        const [response, sight] = await Promise.all([
+          fetch("/api/analyze", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              imageBase64,
+              restaurant: restaurant.trim(),
+              dishHint: dishHint.trim(),
+              sizeHint,
+              groqKey,
+              quarterFound: quarter.found,
+            }),
           }),
-        });
+          localSight,
+        ]);
         const data = (await response.json()) as
           | { meal: MealAnalysis }
           | { error: string; message?: string };
         if (response.ok && "meal" in data) {
           nextMeal = data.meal;
+          if (sight) {
+            nextMeal = applyLocalIdentityGuard(
+              nextMeal,
+              sight,
+              restaurant.trim(),
+              dishHint.trim(),
+            );
+          }
         } else {
           throw new Error(
             "error" in data
@@ -201,11 +218,8 @@ export function BitewiseApp() {
           );
         }
       } else {
-        const sight = await inspectMealPhoto(
-          previewUrl,
-          restaurant.trim(),
-          dishHint.trim(),
-        );
+        const sight = await localSight;
+        if (!sight) throw new Error("Could not read that photo.");
         nextMeal = analyzeFree(
           sight.labels,
           restaurant.trim(),

@@ -1,5 +1,5 @@
-const MAX_EDGE = 1600;
-const JPEG_QUALITY = 0.86;
+const MAX_EDGE = 1920;
+const JPEG_QUALITY = 0.92;
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {

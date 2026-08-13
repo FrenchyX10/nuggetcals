@@ -7,30 +7,38 @@ import {
   type PortionSize,
 } from "@/lib/portion-size";
 import { refineMealWithPublishedNutrition } from "@/lib/refine-meal";
+import { sanitizeIdentifiedName } from "@/lib/identify-guards";
 
-const SYSTEM = `You only identify food in a photo. Do not invent calorie numbers.
+const SYSTEM = `You identify food in a photo. Do not invent calorie numbers.
 
-Rules:
-- Name every edible item you can actually see. Be specific: blueberry pancakes vs fried chicken vs hamburger.
-- Never confuse pancakes or waffles with fried chicken. Never call chicken a burger.
+Look first, then name. Fill lookClues before you pick a name.
+
+Look-clues (required):
+- shape: stack of flat rounds, bone-in pieces, bun sandwich, bowl, pizza slice, noodles
+- surface: matte cake crumb, craggy breading, bun sesame, melted cheese, syrup shine
+- extras: berries, syrup, butter, bones, bun, lettuce, fries only if visible
+
+Hard disambiguation:
+- Pancakes / waffles / French toast = stacked or gridded cakes, often syrup or berries. NEVER fried chicken.
+- Fried chicken = irregular breaded pieces, often bone or craggy crust. NEVER pancakes. NEVER a burger unless there is a bun.
+- Burger = bun + patty. No bun = not a burger. Chicken in a bun = chicken sandwich, not a hamburger.
+- Pizza = triangular slice or round pie with toppings, not a quesadilla unless folded.
 - Do not add fries, drinks, or sides unless they are clearly in the photo.
-- Use what is visible as a scale, then pick small, medium, or large.
-  Look at ingredients you can see: scoop of rice, pile of fries, piece count, patty vs bun, pancake stack, cup/box, how full the plate is.
-  Compare those to a normal restaurant serving.
-  small = kids / junior / thin layer / 1–2 pancakes / 4–6 pieces / plate half empty
-  medium = regular serving / typical scoop / 3 pancakes / normal fry box
-  large = heaping scoops / extra protein / 4+ pancakes / stuffed plate / large box or cup
-- Put the visual scale clues in sizeReason (e.g. "two heaping rice scoops and extra chicken").
-- If a US quarter is visible, set quarterVisible true and use it as a 24.26 mm ruler.
-- If a restaurant is named, pick the closest real menu item name (Hamburger, not Whopper, unless it clearly is a Whopper).
-- If it is not food, set isFood false.
-- Reply with one small JSON object only. No markdown. No extra text.`;
+
+Size from what you see (small / medium / large):
+- piece count, stack height, how full the plate/bowl/box is
+- a US quarter is 24.26 mm if visible
+
+If a restaurant is named, use the closest real menu item (Hamburger, not Whopper, unless it clearly is a Whopper).
+If it is not food, set isFood false.
+Reply with one JSON object only.`;
 
 export async function analyzeWithFreeVision(options: {
   imageBase64: string;
   restaurant: string;
   dishHint: string;
   sizeHint?: string;
+  localGuess?: string;
   quarterFound?: boolean;
   provider: "groq" | "gemini";
   apiKey: string;
@@ -40,7 +48,11 @@ export async function analyzeWithFreeVision(options: {
       ? await callGroq(options)
       : await callGemini(options);
 
-  const identified = parseIdentity(raw, options.restaurant, options.sizeHint);
+  const identified = parseIdentity(
+    raw,
+    options.dishHint || options.restaurant,
+    options.sizeHint,
+  );
   if (!identified.isFood) {
     return {
       mealName: "Not a meal",
@@ -188,6 +200,7 @@ function groqRequest(
     restaurant: string;
     dishHint: string;
     sizeHint?: string;
+    localGuess?: string;
     quarterFound?: boolean;
     apiKey: string;
   },
@@ -201,7 +214,7 @@ function groqRequest(
     },
     body: JSON.stringify({
       model,
-      temperature: 0.1,
+      temperature: 0,
       max_completion_tokens: 3500,
       reasoning_effort: "none",
       messages: [
@@ -209,11 +222,12 @@ function groqRequest(
         {
           role: "user",
           content: [
-            { type: "text", text: userPrompt(options.restaurant, options.dishHint, options.quarterFound, options.sizeHint) },
+            { type: "text", text: userPrompt(options.restaurant, options.dishHint, options.quarterFound, options.sizeHint, options.localGuess) },
             {
               type: "image_url",
               image_url: {
                 url: `data:image/jpeg;base64,${options.imageBase64}`,
+                detail: "high",
               },
             },
           ],
@@ -228,6 +242,7 @@ async function callGemini(options: {
   restaurant: string;
   dishHint: string;
   sizeHint?: string;
+  localGuess?: string;
   quarterFound?: boolean;
   apiKey: string;
 }) {
@@ -246,7 +261,7 @@ async function callGemini(options: {
             {
               role: "user",
               parts: [
-                { text: userPrompt(options.restaurant, options.dishHint, options.quarterFound, options.sizeHint) },
+                { text: userPrompt(options.restaurant, options.dishHint, options.quarterFound, options.sizeHint, options.localGuess) },
                 {
                   inlineData: {
                     mimeType: "image/jpeg",
@@ -283,29 +298,21 @@ function userPrompt(
   dishHint: string,
   quarterFound = false,
   sizeHint = "",
+  localGuess = "",
 ) {
-  return `Step 1 only: identify the food and judge small / medium / large. Do not calculate calories.
+  return `Identify the food. Look at shape and surface first. Do not calculate calories.
 
 Restaurant typed by the user: ${restaurant || "(none)"}
 User hint: ${dishHint || "(none)"}
-User size: ${sizeHint || "(not chosen — judge it from the photo using visible ingredients as a scale)"}
+User size: ${sizeHint || "(not chosen — judge from the photo)"}
+On-device food model guess (may be wrong): ${localGuess || "(none)"}
 Quarter detector: ${quarterFound ? "possible quarter in the photo" : "no quarter detected"}. Confirm visually.
 
-Use visible ingredients as the scale:
-- How much rice, pasta, fries, meat, cheese, sauce do you actually see?
-- Piece count (nuggets, pancakes, tacos, wings)
-- How full is the plate / bowl / box / cup compared to a normal serving?
-- If a quarter is visible, use it as a 24.26 mm ruler next to those ingredients.
-
-Then pick size:
-- small: light plate, kids/junior, thin layer
-- medium: regular restaurant serving
-- large: heaping, extra scoops, stuffed plate
+If the photo shows a stack of round cakes or syrup/berries, name pancakes or waffles, even if the on-device guess says chicken.
+If you see a bun and a patty, it is a burger or sandwich, not loose fried chicken.
 
 Return only this JSON:
-{"isFood":true,"notFoodReason":null,"mealName":"short name","size":"medium","sizeReason":"visible scale clues","quarterVisible":false,"items":[{"name":"specific food name","size":"medium","notes":"what you see","estimatedGrams":180}]}
-
-size must be small, medium, or large. sizeReason is the ingredient/scale evidence. Calories will be looked up next.`;
+{"isFood":true,"notFoodReason":null,"mealName":"short specific name","lookClues":"shape, surface, extras","size":"medium","sizeReason":"visible scale clues","quarterVisible":false,"items":[{"name":"specific food name","size":"medium","notes":"what you see","estimatedGrams":180}]}`;
 }
 
 function parseIdentity(text: string, restaurantInput: string, sizeHint = "") {
@@ -317,7 +324,11 @@ function parseIdentity(text: string, restaurantInput: string, sizeHint = "") {
   return {
     isFood: value.isFood !== false,
     notFoodReason: typeof value.notFoodReason === "string" ? value.notFoodReason : null,
-    mealName: String(value.mealName ?? restaurantInput ?? "Meal"),
+    mealName: sanitizeIdentifiedName(
+      String(value.mealName ?? restaurantInput ?? "Meal"),
+      `${value.lookClues ?? ""} ${value.sizeReason ?? ""}`,
+      restaurantInput,
+    ),
     size: mealSize,
     sizeReason:
       typeof value.sizeReason === "string" && value.sizeReason.trim()
@@ -328,7 +339,11 @@ function parseIdentity(text: string, restaurantInput: string, sizeHint = "") {
       .map((item) => {
         const row = item && typeof item === "object" ? (item as Record<string, unknown>) : {};
         return {
-          name: String(row.name ?? "Food"),
+          name: sanitizeIdentifiedName(
+            String(row.name ?? "Food"),
+            `${row.notes ?? ""} ${value.lookClues ?? ""}`,
+            restaurantInput,
+          ),
           notes: String(row.notes ?? ""),
           estimatedGrams: num(row.estimatedGrams, 0),
           size: (sizeHint
