@@ -937,7 +937,31 @@ input {
   list-style: none;
 }
 
+.ingredient-box {
+  width: 100%;
+  min-height: 110px;
+  resize: vertical;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #18130f;
+  color: var(--ink);
+  padding: 14px 16px;
+  outline: none;
+  font: inherit;
+}
+
+.ingredient-box:focus {
+  border-color: var(--gold);
+}
+
+.homemade-result {
+  margin-top: 18px;
+}
+
 .ingredient-lines li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
   padding: 12px 14px;
   border: 1px solid var(--line);
   border-radius: 16px;

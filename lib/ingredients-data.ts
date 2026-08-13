@@ -25,7 +25,7 @@ const USDA = "https://fdc.nal.usda.gov/";
 export const INGREDIENTS: IngredientRecord[] = [
   i("Chicken breast, cooked", ["chicken", "grilled chicken"], 165, 31, 0, 3.6, 0, 0, 74, [u("4 oz", 113), u("6 oz", 170), u("100 g", 100)], "USDA cooked chicken breast"),
   i("Ground beef, 85% lean, cooked", ["beef", "hamburger meat"], 250, 26, 0, 17, 0, 0, 75, [u("4 oz", 113), u("patty", 113), u("100 g", 100)], "USDA ground beef"),
-  i("Eggs, large", ["egg", "eggs"], 143, 13, 0.7, 9.5, 0, 0.4, 142, [u("1 large", 50), u("2 large", 100), u("3 large", 150)], "USDA large egg"),
+  i("Egg", ["egg", "eggs", "large egg"], 143, 13, 0.7, 9.5, 0, 0.4, 142, [u("1 egg", 50), u("100 g", 100)], "USDA large egg"),
   i("White rice, cooked", ["rice"], 130, 2.7, 28, 0.3, 0.4, 0, 1, [u("1/2 cup", 79), u("1 cup", 158), u("100 g", 100)], "USDA white rice"),
   i("Brown rice, cooked", ["brown rice"], 123, 2.7, 26, 1, 1.6, 0.2, 4, [u("1/2 cup", 98), u("1 cup", 195), u("100 g", 100)], "USDA brown rice"),
   i("Pasta, cooked", ["spaghetti", "noodles"], 158, 5.8, 31, 0.9, 1.8, 0.6, 1, [u("1 cup", 140), u("2 cups", 280), u("100 g", 100)], "USDA pasta"),
@@ -46,7 +46,7 @@ export const INGREDIENTS: IngredientRecord[] = [
   i("Apple", ["apple"], 52, 0.3, 14, 0.2, 2.4, 10, 1, [u("1 medium", 182), u("1 cup sliced", 110)], "USDA apple"),
   i("Blueberries", ["blueberry"], 57, 0.7, 14, 0.3, 2.4, 10, 1, [u("1/2 cup", 74), u("1 cup", 148)], "USDA blueberries"),
   i("Oats, dry", ["oatmeal", "oats"], 389, 17, 66, 7, 11, 1, 2, [u("1/2 cup", 40), u("1 cup", 80)], "USDA oats"),
-  i("Bread, wheat", ["bread", "toast"], 267, 13, 49, 3.4, 6, 6, 491, [u("1 slice", 32), u("2 slices", 64)], "USDA wheat bread"),
+  i("Bread", ["bread", "toast", "slice of bread", "white bread", "wheat bread"], 267, 13, 49, 3.4, 6, 6, 491, [u("1 slice", 32), u("100 g", 100)], "USDA wheat bread"),
   i("Tortilla, flour", ["tortilla"], 312, 8, 51, 8, 3, 2, 636, [u("1 medium", 49), u("1 large", 72)], "USDA flour tortilla"),
   i("Peanut butter", ["peanut butter"], 588, 25, 20, 50, 6, 9, 17, [u("1 tbsp", 16), u("2 tbsp", 32)], "USDA peanut butter"),
   i("Sugar, white", ["sugar"], 387, 0, 100, 0, 0, 100, 0, [u("1 tsp", 4), u("1 tbsp", 12), u("1/4 cup", 50)], "USDA sugar"),
@@ -119,6 +119,84 @@ export function searchIngredients(query: string) {
     .filter((row) => row.score > 0)
     .sort((a, b) => b.score - a.score)
     .map((row) => row.item);
+}
+
+export type ParsedIngredient = {
+  ingredient: IngredientRecord;
+  amount: number;
+  unitIndex: number;
+  grams: number;
+  label: string;
+};
+
+export function parseIngredientList(text: string): {
+  lines: ParsedIngredient[];
+  unknown: string[];
+} {
+  const chunks = text
+    .split(/,|\n|;|\band\b/i)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  const lines: ParsedIngredient[] = [];
+  const unknown: string[] = [];
+
+  for (const chunk of chunks) {
+    const parsed = parseOneIngredient(chunk);
+    if (parsed) lines.push(parsed);
+    else unknown.push(chunk);
+  }
+  return { lines, unknown };
+}
+
+function parseOneIngredient(chunk: string): ParsedIngredient | null {
+  const raw = chunk.trim();
+  if (!raw) return null;
+  const match = raw.match(/^(\d+(?:\.\d+)?)\s*(.*)$/);
+  const amount = match ? Number(match[1]) : 1;
+  const rest = normalizeName(match ? match[2] : raw);
+  if (!rest || !Number.isFinite(amount) || amount <= 0) return null;
+
+  const withoutUnit = rest
+    .replace(
+      /\b(slices?|pieces?|eggs?|cups?|tbsp|tablespoons?|tsp|teaspoons?|oz|ounces?|grams?|g|large|medium|small)\b/g,
+      " ",
+    )
+    .replace(/\s+/g, " ")
+    .trim();
+  const nameQuery = withoutUnit || rest;
+  const ingredient = searchIngredients(nameQuery)[0];
+  if (!ingredient) return null;
+
+  const unitIndex = pickUnitIndex(ingredient, rest);
+  const unit = ingredient.units[unitIndex] ?? ingredient.units[0];
+  return {
+    ingredient,
+    amount,
+    unitIndex,
+    grams: unit.grams * amount,
+    label: `${trimNumber(amount)} ${unit.label.replace(/^1\s+/, "")}`,
+  };
+}
+
+function pickUnitIndex(ingredient: IngredientRecord, rest: string) {
+  const blob = ` ${rest} `;
+  const scored = ingredient.units.map((unit, index) => {
+    const label = normalizeName(unit.label);
+    let score = index === 0 ? 1 : 0;
+    if (blob.includes(` ${label} `) || rest.includes(label)) score += 5;
+    if (/\b(tbsp|tablespoon)/.test(rest) && /tbsp|tablespoon/.test(label)) score += 4;
+    if (/\b(tsp|teaspoon)/.test(rest) && /tsp|teaspoon/.test(label)) score += 4;
+    if (/\bcups?\b/.test(rest) && /\bcup/.test(label)) score += 4;
+    if (/\b(slices?|bread)\b/.test(rest) && /slice/.test(label)) score += 4;
+    if (/\beggs?\b/.test(rest) && /egg/.test(label)) score += 4;
+    return { index, score };
+  });
+  scored.sort((a, b) => b.score - a.score);
+  return scored[0]?.index ?? 0;
+}
+
+function trimNumber(value: number) {
+  return Number.isInteger(value) ? String(value) : String(Math.round(value * 100) / 100);
 }
 
 export function scaleIngredient(item: IngredientRecord, grams: number) {

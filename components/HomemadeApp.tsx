@@ -6,7 +6,7 @@ import { addHistory, loadHistory, todayTotals, type HistoryEntry } from "@/lib/h
 import { grams, kcal } from "@/lib/format";
 import { loadPlan } from "@/lib/plan";
 import {
-  searchIngredients,
+  parseIngredientList,
   scaleIngredient,
   type IngredientRecord,
 } from "@/lib/ingredients-data";
@@ -15,11 +15,14 @@ import type { FoodItem } from "@/lib/schema";
 
 const THUMB = svgThumb("#f0b45a", "H");
 
+const QUICK = ["1 egg", "1 bread", "1 tbsp butter", "1 tbsp oil", "1 cup rice", "1 banana"];
+
 type Line = {
   id: string;
   ingredient: IngredientRecord;
   unitIndex: number;
   amount: number;
+  label: string;
 };
 
 export function HomemadeApp() {
@@ -27,12 +30,11 @@ export function HomemadeApp() {
   const [planCalories, setPlanCalories] = useState(2000);
   const [mode, setMode] = useState<"ingredients" | "calories">("ingredients");
   const [mealName, setMealName] = useState("");
-  const [query, setQuery] = useState("");
-  const [hits, setHits] = useState<IngredientRecord[]>([]);
+  const [listText, setListText] = useState("");
   const [lines, setLines] = useState<Line[]>([]);
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [added, setAdded] = useState(false);
+
   const [quickCals, setQuickCals] = useState("");
   const [quickProtein, setQuickProtein] = useState("");
   const [quickCarbs, setQuickCarbs] = useState("");
@@ -45,7 +47,6 @@ export function HomemadeApp() {
 
   const today = useMemo(() => todayTotals(history), [history]);
   const remaining = planCalories - today.calories;
-  const suggestions = useMemo(() => searchIngredients(query).slice(0, 8), [query]);
 
   const totals = useMemo(() => {
     return lines.reduce(
@@ -65,57 +66,48 @@ export function HomemadeApp() {
     );
   }, [lines]);
 
-  function addIngredient(ingredient: IngredientRecord) {
-    setLines((current) => [
-      ...current,
-      {
-        id: crypto.randomUUID(),
-        ingredient,
-        unitIndex: 0,
-        amount: 1,
-      },
-    ]);
-    setQuery("");
-    setHits([]);
-  }
-
-  async function lookupIngredient() {
-    const text = query.trim();
-    if (text.length < 2) return;
-    setBusy(true);
+  function appendQuick(phrase: string) {
+    setListText((current) => {
+      const next = current.trim();
+      return next ? `${next}, ${phrase}` : phrase;
+    });
     setError(null);
-    try {
-      const response = await fetch("/api/ingredient", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: text }),
-      });
-      const data = (await response.json()) as {
-        ingredients?: IngredientRecord[];
-        error?: string;
-      };
-      if (!response.ok) throw new Error(data.error || "Ingredient lookup failed.");
-      setHits(data.ingredients ?? []);
-      if (!data.ingredients?.length) setError("No USDA ingredient matched that name.");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Ingredient lookup failed.");
-    } finally {
-      setBusy(false);
-    }
   }
 
-  function logIngredients() {
-    if (lines.length === 0) {
-      setError("Add at least one ingredient, or switch to Just log calories.");
+  function countIngredients() {
+    const text = listText.trim();
+    if (!text) {
+      setError("Type ingredients like 1 egg, 1 bread.");
       return;
     }
-    const items: FoodItem[] = lines.map((line) => {
+
+    const parsed = parseIngredientList(text);
+    if (parsed.lines.length === 0) {
+      setError(
+        parsed.unknown.length
+          ? `Could not read: ${parsed.unknown.join(", ")}. Try “1 egg, 1 bread”.`
+          : "Could not read those ingredients. Try “1 egg, 1 bread”.",
+      );
+      setLines([]);
+      return;
+    }
+
+    const nextLines: Line[] = parsed.lines.map((row) => ({
+      id: `${row.ingredient.name}-${row.label}-${Math.random().toString(36).slice(2, 7)}`,
+      ingredient: row.ingredient,
+      unitIndex: row.unitIndex,
+      amount: row.amount,
+      label: row.label,
+    }));
+    setLines(nextLines);
+
+    const items: FoodItem[] = nextLines.map((line) => {
       const unit = line.ingredient.units[line.unitIndex] ?? line.ingredient.units[0];
       const scaled = scaleIngredient(line.ingredient, unit.grams * line.amount);
       return {
         name: line.ingredient.name,
         brandOrRestaurantItem: null,
-        portionDescription: `${line.amount} × ${unit.label} · ${scaled.grams}g`,
+        portionDescription: line.label,
         portionSize: "medium" as const,
         estimatedGrams: scaled.grams,
         calories: scaled.calories,
@@ -130,29 +122,51 @@ export function HomemadeApp() {
         notes: line.ingredient.source,
       };
     });
+
+    const mealTotals = items.reduce(
+      (acc, item) => {
+        acc.calories += item.calories;
+        acc.proteinG += item.proteinG;
+        acc.carbsG += item.carbsG;
+        acc.fatG += item.fatG;
+        acc.fiberG += item.fiberG;
+        acc.sugarG += item.sugarG;
+        acc.sodiumMg += item.sodiumMg;
+        return acc;
+      },
+      { calories: 0, proteinG: 0, carbsG: 0, fatG: 0, fiberG: 0, sugarG: 0, sodiumMg: 0 },
+    );
+
     const meal = mealFromTotals({
-      mealName: mealName || items.map((item) => item.name).slice(0, 3).join(" + "),
+      mealName:
+        mealName.trim() ||
+        items.map((item) => item.portionDescription).slice(0, 3).join(" + "),
       restaurant: "Homemade",
-      calories: totals.calories,
-      proteinG: totals.proteinG,
-      carbsG: totals.carbsG,
-      fatG: totals.fatG,
-      fiberG: totals.fiberG,
-      sugarG: totals.sugarG,
-      sodiumMg: totals.sodiumMg,
+      calories: mealTotals.calories,
+      proteinG: mealTotals.proteinG,
+      carbsG: mealTotals.carbsG,
+      fatG: mealTotals.fatG,
+      fiberG: mealTotals.fiberG,
+      sugarG: mealTotals.sugarG,
+      sodiumMg: mealTotals.sodiumMg,
       items,
       method: "usda",
       assumptions: [
-        "Homemade meal built from ingredients.",
-        "Calories are USDA-style numbers for the amounts you entered.",
+        `Counted from: ${text}`,
+        "Calories are USDA-style numbers for each ingredient.",
       ],
-      precisionNotes: "Homemade estimate from listed ingredients. Oils and sauces move the number most.",
+      precisionNotes: "Homemade estimate from 1 egg, 1 bread-style amounts.",
       sources: [{ title: "USDA FoodData Central", url: "https://fdc.nal.usda.gov/" }],
     });
+
     setHistory(addHistory(historyFromMeal(meal, THUMB, "Homemade")));
     setAdded(true);
-    setError(null);
-    window.setTimeout(() => setAdded(false), 1800);
+    setError(
+      parsed.unknown.length
+        ? `Logged. Skipped: ${parsed.unknown.join(", ")}`
+        : null,
+    );
+    window.setTimeout(() => setAdded(false), 2200);
   }
 
   function logCalories() {
@@ -175,10 +189,8 @@ export function HomemadeApp() {
     setHistory(addHistory(historyFromMeal(meal, THUMB, "Homemade")));
     setAdded(true);
     setError(null);
-    window.setTimeout(() => setAdded(false), 1800);
+    window.setTimeout(() => setAdded(false), 2200);
   }
-
-  const shownHits = hits.length > 0 ? hits : query.trim() ? suggestions : suggestions.slice(0, 6);
 
   return (
     <div className="page-shell">
@@ -191,25 +203,24 @@ export function HomemadeApp() {
       <main>
         <section className="hero" id="top">
           <div>
-            <p className="eyebrow">Cooked at home.</p>
+            <p className="eyebrow">1 egg. 1 bread. Done.</p>
             <h1>
               Log
               <em> homemade food</em>
             </h1>
             <p className="lede">
-              Add the ingredients you used, or skip that and type the calories.
-              Either way it counts toward today.
+              Type what you ate, like <strong>1 egg, 1 bread</strong>. Tap
+              Count calories to see the number and add it to today.
             </p>
           </div>
           <aside className="hero-aside">
             <p>
-              <strong>By ingredients</strong>
-              Chicken, rice, oil, cheese — USDA numbers scaled to the amount
-              you used.
+              <strong>Write it simply</strong>
+              1 egg, 2 bread, 1 tbsp butter. No extra taps needed.
             </p>
             <p>
-              <strong>Just calories</strong>
-              If you already know the number, type it and add it to the day.
+              <strong>Or just calories</strong>
+              If you already know the number, type it instead.
             </p>
             <p>
               <strong>{kcal(Math.max(0, remaining))} kcal left</strong>
@@ -242,7 +253,7 @@ export function HomemadeApp() {
               <input
                 value={mealName}
                 onChange={(event) => setMealName(event.target.value)}
-                placeholder="Chicken and rice, leftover pasta…"
+                placeholder="Eggs on toast…"
                 maxLength={80}
               />
             </label>
@@ -250,136 +261,70 @@ export function HomemadeApp() {
             {mode === "ingredients" ? (
               <>
                 <label className="field">
-                  <span>Add an ingredient</span>
-                  <input
-                    value={query}
+                  <span>Ingredients</span>
+                  <textarea
+                    className="ingredient-box"
+                    value={listText}
                     onChange={(event) => {
-                      setQuery(event.target.value);
-                      setHits([]);
+                      setListText(event.target.value);
                       setError(null);
                     }}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") {
-                        event.preventDefault();
-                        if (suggestions[0]) addIngredient(suggestions[0]);
-                      }
-                    }}
-                    placeholder="chicken, rice, olive oil, egg…"
-                    maxLength={80}
+                    placeholder={"1 egg, 1 bread\n1 tbsp butter"}
+                    rows={4}
                   />
                 </label>
-                <button
-                  type="button"
-                  className="ghost"
-                  disabled={busy || query.trim().length < 2}
-                  onClick={() => void lookupIngredient()}
-                >
-                  {busy ? "Looking up USDA…" : "Search USDA if it is not in the list"}
-                </button>
-                <div className="chips" aria-label="Ingredient matches">
-                  {shownHits.map((item) => (
+                <div className="chips" aria-label="Quick add">
+                  {QUICK.map((phrase) => (
                     <button
-                      key={item.name}
+                      key={phrase}
                       type="button"
                       className="chip"
-                      onClick={() => addIngredient(item)}
+                      onClick={() => appendQuick(phrase)}
                     >
-                      {item.name}
+                      + {phrase}
                     </button>
                   ))}
                 </div>
 
-                {lines.length > 0 ? (
-                  <ul className="ingredient-lines">
-                    {lines.map((line) => {
-                      const unit =
-                        line.ingredient.units[line.unitIndex] ?? line.ingredient.units[0];
-                      const scaled = scaleIngredient(
-                        line.ingredient,
-                        unit.grams * line.amount,
-                      );
-                      return (
-                        <li key={line.id}>
-                          <strong>{line.ingredient.name}</strong>
-                          <div className="ingredient-controls">
-                            <input
-                              type="number"
-                              min={0.25}
-                              step={0.25}
-                              value={line.amount}
-                              onChange={(event) => {
-                                const value = Number(event.target.value);
-                                setLines((current) =>
-                                  current.map((row) =>
-                                    row.id === line.id
-                                      ? {
-                                          ...row,
-                                          amount: Number.isFinite(value)
-                                            ? Math.max(0.25, value)
-                                            : 1,
-                                        }
-                                      : row,
-                                  ),
-                                );
-                              }}
-                            />
-                            <select
-                              value={line.unitIndex}
-                              onChange={(event) => {
-                                const index = Number(event.target.value);
-                                setLines((current) =>
-                                  current.map((row) =>
-                                    row.id === line.id
-                                      ? { ...row, unitIndex: index }
-                                      : row,
-                                  ),
-                                );
-                              }}
-                            >
-                              {line.ingredient.units.map((option, index) => (
-                                <option key={option.label} value={index}>
-                                  {option.label}
-                                </option>
-                              ))}
-                            </select>
-                            <em>{kcal(scaled.calories)} kcal</em>
-                            <button
-                              type="button"
-                              className="icon-btn"
-                              aria-label={`Remove ${line.ingredient.name}`}
-                              onClick={() =>
-                                setLines((current) =>
-                                  current.filter((row) => row.id !== line.id),
-                                )
-                              }
-                            >
-                              ×
-                            </button>
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                ) : (
-                  <p className="hint">Tap ingredients to build the plate.</p>
-                )}
-
-                <div className="homemade-total">
-                  <span>Total</span>
-                  <strong>{kcal(totals.calories)} kcal</strong>
-                </div>
-                <p className="snack-macros">
-                  P {grams(totals.proteinG)}g · C {grams(totals.carbsG)}g · F{" "}
-                  {grams(totals.fatG)}g
-                </p>
                 <button
                   type="button"
                   className="analyze"
-                  disabled={lines.length === 0}
-                  onClick={logIngredients}
+                  onClick={countIngredients}
                 >
-                  {added ? "Added to today" : "Add homemade meal to today"}
+                  {added ? "Added to today" : "Count these calories"}
                 </button>
+
+                {lines.length > 0 ? (
+                  <div className="homemade-result">
+                    <div className="homemade-total">
+                      <span>This plate</span>
+                      <strong>{kcal(totals.calories)} kcal</strong>
+                    </div>
+                    <p className="snack-macros">
+                      P {grams(totals.proteinG)}g · C {grams(totals.carbsG)}g · F{" "}
+                      {grams(totals.fatG)}g
+                    </p>
+                    <ul className="ingredient-lines">
+                      {lines.map((line) => {
+                        const unit =
+                          line.ingredient.units[line.unitIndex] ??
+                          line.ingredient.units[0];
+                        const scaled = scaleIngredient(
+                          line.ingredient,
+                          unit.grams * line.amount,
+                        );
+                        return (
+                          <li key={line.id}>
+                            <strong>
+                              {line.label} {line.ingredient.name.toLowerCase()}
+                            </strong>
+                            <em>{kcal(scaled.calories)} kcal</em>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                ) : null}
               </>
             ) : (
               <>
