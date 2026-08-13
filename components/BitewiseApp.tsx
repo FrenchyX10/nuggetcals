@@ -12,6 +12,7 @@ import {
 } from "@/lib/history";
 import { analyzeFree, mealFromRecord, suggestAlternatives } from "@/lib/free-analyze";
 import { inspectMealPhoto } from "@/lib/local-vision";
+import { detectQuarterScale } from "@/lib/quarter-scale";
 import { prepareImage } from "@/lib/image";
 import { confidenceLabel, grams, kcal, methodLabel } from "@/lib/format";
 import { DAILY_PLANS, loadPlan, savePlan } from "@/lib/plan";
@@ -51,11 +52,13 @@ const DISH_HINTS = [
 ];
 
 const ANALYZE_STEPS = [
-  "Loading on-device food AI (first time only)…",
-  "Reading the photo on this computer…",
-  "Estimating how big the portion is…",
-  "Scaling published calories to that size…",
+  "Looking at the plate with free vision AI…",
+  "Checking for a quarter to lock the scale…",
+  "Matching restaurant menu or USDA numbers…",
+  "Adding up the meal…",
 ];
+
+const GROQ_KEY = "nuggetcals-groq-key";
 
 export function BitewiseApp() {
   const fileRef = useRef<HTMLInputElement>(null);
@@ -77,12 +80,17 @@ export function BitewiseApp() {
   const [servings, setServings] = useState(1);
   const [planId, setPlanId] = useState("maintain");
   const [planCalories, setPlanCalories] = useState(2000);
+  const [groqKey, setGroqKey] = useState("");
+  const [keyDraft, setKeyDraft] = useState("");
+  const [savingKey, setSavingKey] = useState(false);
 
   useEffect(() => {
     setHistory(loadHistory());
     const plan = loadPlan();
     setPlanId(plan.id);
     setPlanCalories(plan.calories);
+    const stored = window.localStorage.getItem(GROQ_KEY) ?? "";
+    setGroqKey(stored);
   }, []);
 
   useEffect(() => {
@@ -98,6 +106,28 @@ export function BitewiseApp() {
   const usedShare = Math.min(1, today.calories / Math.max(planCalories, 1));
   const activeEntry = history.find((item) => item.id === entryId) ?? null;
   const scale = activeEntry?.servings ?? servings;
+
+  async function saveGroqKey() {
+    const value = keyDraft.trim();
+    if (value.length < 20) {
+      setError("Paste the full Groq key. It is free — no credit card.");
+      return;
+    }
+    setSavingKey(true);
+    setError(null);
+    try {
+      window.localStorage.setItem(GROQ_KEY, value);
+      setGroqKey(value);
+      setKeyDraft("");
+      await fetch("/api/setup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ groqKey: value }),
+      });
+    } finally {
+      setSavingKey(false);
+    }
+  }
 
   function choosePlan(id: string, calories: number) {
     setPlanId(id);
@@ -132,17 +162,50 @@ export function BitewiseApp() {
     setStep(0);
 
     try {
-      const sight = await inspectMealPhoto(
-        previewUrl,
-        restaurant.trim(),
-        dishHint.trim(),
-      );
-      const nextMeal = analyzeFree(
-        sight.labels,
-        restaurant.trim(),
-        dishHint.trim(),
-        { caption: sight.caption, portionGrams: sight.portionGrams },
-      );
+      const quarter = await detectQuarterScale(previewUrl);
+      let nextMeal: MealAnalysis | null = null;
+
+      if (groqKey) {
+        const response = await fetch("/api/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            imageBase64,
+            restaurant: restaurant.trim(),
+            dishHint: dishHint.trim(),
+            groqKey,
+            quarterFound: quarter.found,
+          }),
+        });
+        const data = (await response.json()) as
+          | { meal: MealAnalysis }
+          | { error: string; message?: string };
+        if (response.ok && "meal" in data) {
+          nextMeal = data.meal;
+        } else {
+          throw new Error(
+            "error" in data
+              ? data.message || data.error
+              : "Vision analysis failed.",
+          );
+        }
+      } else {
+        const sight = await inspectMealPhoto(
+          previewUrl,
+          restaurant.trim(),
+          dishHint.trim(),
+        );
+        nextMeal = analyzeFree(
+          sight.labels,
+          restaurant.trim(),
+          dishHint.trim(),
+          {
+            caption: sight.caption,
+            portionGrams: sight.portionGrams,
+            quarterFound: sight.quarterFound || quarter.found,
+          },
+        );
+      }
 
       setMeal(nextMeal);
       if (nextMeal.isFood) {
@@ -275,8 +338,49 @@ export function BitewiseApp() {
               <strong>Restaurant optional</strong>
               Add Chipotle, Cane&apos;s, or a diner name for menu-style numbers.
             </p>
+            <p>
+              <strong>Drop a US quarter in the shot</strong>
+              Lay a quarter next to homemade food. It is 24.26 mm wide, so size
+              (and calories) get much closer.
+            </p>
           </aside>
         </section>
+
+        {!groqKey ? (
+          <section className="setup-card">
+            <p className="card-kicker">Optional · free vision upgrade</p>
+            <h2>Add a free Groq key for much better accuracy</h2>
+            <p>
+              Groq&apos;s vision model can actually see the food and a quarter
+              in the photo. It is free and does not need a credit card. Create a
+              key at{" "}
+              <a href="https://console.groq.com/keys" target="_blank" rel="noreferrer">
+                console.groq.com/keys
+              </a>
+              , then paste it here.
+            </p>
+            <label className="field">
+              <span>Groq API key</span>
+              <input
+                type="password"
+                autoComplete="off"
+                value={keyDraft}
+                onChange={(event) => setKeyDraft(event.target.value)}
+                placeholder="gsk_..."
+              />
+            </label>
+            <button
+              type="button"
+              className="analyze"
+              disabled={savingKey || keyDraft.trim().length < 20}
+              onClick={() => void saveGroqKey()}
+            >
+              {savingKey ? "Saving…" : "Save free key"}
+            </button>
+          </section>
+        ) : (
+          <p className="hint">Free Groq vision is on. You can still add a quarter for homemade scale.</p>
+        )}
 
         <section className="workspace">
           <div className="composer">
@@ -304,7 +408,7 @@ export function BitewiseApp() {
                   <img className="nugget-float" src="/nugget.jpg" alt="" />
                   <span className="drop-kicker">Drop a meal photo</span>
                   <strong>Tap to snap or upload</strong>
-                  <small>JPG or PNG · close, well-lit food works best</small>
+                  <small>JPG or PNG · add a US quarter next to homemade food for scale</small>
                 </div>
               )}
             </button>
@@ -558,7 +662,7 @@ export function BitewiseApp() {
                   <strong>See the food.</strong> On-device AI describes the photo. No API key.
                 </li>
                 <li>
-                  <strong>Estimate the size.</strong> It measures how much of the plate is filled, guesses grams, then scales published calories.
+                  <strong>Estimate the size.</strong> Put a US quarter next to homemade food. The app uses the coin as a ruler, then scales calories.
                 </li>
                 <li>
                   <strong>Adjust it.</strong> Use <em>I ate</em> if you only finished part of the plate.

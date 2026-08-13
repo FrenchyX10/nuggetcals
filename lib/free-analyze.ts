@@ -26,7 +26,7 @@ export function analyzeFree(
   labels: FoodLabel[],
   restaurantInput: string,
   dishHint = "",
-  options: { caption?: string; portionGrams?: number } = {},
+  options: { caption?: string; portionGrams?: number; quarterFound?: boolean } = {},
 ): MealAnalysis {
   if (options.caption) {
     labels = [{ label: options.caption, score: 0.94 }, ...labels];
@@ -68,6 +68,7 @@ export function analyzeFree(
       score,
       matchedChain,
       index === 0 ? options.portionGrams : undefined,
+      options.quarterFound,
     ),
   );
   const totals = sumItems(items);
@@ -91,9 +92,11 @@ export function analyzeFree(
       : "On-device AI looked at the photo. No API key and nothing is sent to a paid service.",
     matchedChain
       ? `Used the official ${matchedChain} 1-serving number. Fast-food items are not scaled up from the photo.`
-      : options.portionGrams
-        ? `Homemade portion was estimated from the photo (~${options.portionGrams}g).`
-        : "A typical published serving was used for size.",
+      : options.quarterFound
+        ? `Found a US quarter in the photo and used it as a ruler (~${options.portionGrams}g).`
+        : options.portionGrams
+          ? `Homemade portion was estimated from the photo (~${options.portionGrams}g).`
+          : "A typical published serving was used for size.",
     "Use the portion slider if you did not eat the whole plate.",
   ];
 
@@ -336,13 +339,18 @@ function toItem(
   score: number,
   restaurant: string | null,
   portionGrams?: number,
+  quarterFound?: boolean,
 ): FoodItem {
   const official = Boolean(restaurant && record.restaurant === restaurant);
   let grams = record.grams;
   if (!official && portionGrams && portionGrams > 40) {
-    const rawScale = portionGrams / Math.max(record.grams, 1);
-    const scale = clamp(rawScale, 0.8, 1.2);
-    grams = Math.round(record.grams * scale);
+    if (quarterFound) {
+      grams = Math.round(portionGrams);
+    } else {
+      const rawScale = portionGrams / Math.max(record.grams, 1);
+      const scale = clamp(rawScale, 0.8, 1.2);
+      grams = Math.round(record.grams * scale);
+    }
   }
   const scale = grams / Math.max(record.grams, 1);
   return {

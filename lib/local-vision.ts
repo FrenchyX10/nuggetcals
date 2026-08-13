@@ -2,12 +2,14 @@
 
 import { classifyMealPhoto, looksLikeBerries } from "@/lib/classify-image";
 import type { FoodLabel } from "@/lib/free-analyze";
+import { detectQuarterScale, gramsFromQuarter } from "@/lib/quarter-scale";
 
 export type LocalSight = {
   caption: string;
   labels: FoodLabel[];
   portionGrams: number;
   coverage: number;
+  quarterFound: boolean;
 };
 
 export async function inspectMealPhoto(
@@ -15,21 +17,26 @@ export async function inspectMealPhoto(
   restaurant: string,
   dishHint: string,
 ): Promise<LocalSight> {
-  const [portion, berries, foodLabels] = await Promise.all([
+  const [portion, berries, foodLabels, quarter] = await Promise.all([
     estimateCoverage(imageDataUrl),
     looksLikeBerries(imageDataUrl),
     classifyMealPhoto(imageDataUrl, restaurant, dishHint),
+    detectQuarterScale(imageDataUrl),
   ]);
 
   const labels = refineLabels(foodLabels, dishHint, berries);
   const main = labels[0]?.label ?? "meal";
-  const portionGrams = gramsFromCoverage(main, portion.coverage);
+  const portionGrams =
+    quarter.found && quarter.foodAreaMm2 > 80
+      ? gramsFromQuarter(main, quarter.foodAreaMm2)
+      : gramsFromCoverage(main, portion.coverage);
 
   return {
     caption: main,
     labels,
     portionGrams,
     coverage: portion.coverage,
+    quarterFound: quarter.found,
   };
 }
 

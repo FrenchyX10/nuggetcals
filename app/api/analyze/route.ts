@@ -1,6 +1,10 @@
-import { analyzeFree, type FoodLabel } from "@/lib/free-analyze";
+import { getVisionAuth } from "@/lib/keys";
+import { analyzeWithFreeVision } from "@/lib/vision-ai";
 
+export const maxDuration = 60;
 export const runtime = "nodejs";
+
+const MAX_BYTES = 8 * 1024 * 1024;
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -12,22 +16,48 @@ export async function POST(request: Request) {
 
   const restaurant = readString(body, "restaurant", 80);
   const dishHint = readString(body, "dishHint", 80);
-  const caption = readString(body, "caption", 240);
-  const portionGrams = readNumber(body, "portionGrams");
-  const labels = parseLabels(body);
+  const imageBase64 = readString(body, "imageBase64", 12_000_000);
+  const groqKey = readString(body, "groqKey", 200);
+  const quarterFound = readBoolean(body, "quarterFound");
 
-  if (labels.length === 0 && !restaurant && !dishHint && !caption) {
+  const auth = groqKey
+    ? { provider: "groq" as const, key: groqKey }
+    : getVisionAuth();
+
+  if (!auth || !imageBase64) {
     return Response.json(
-      { error: "Upload a photo on the home page. Analysis runs on your computer — no API key." },
-      { status: 400 },
+      {
+        error: "missing_vision_key",
+        message: "Add a free Groq API key to analyze with vision.",
+      },
+      { status: 401 },
     );
   }
 
-  const meal = analyzeFree(labels, restaurant, dishHint, {
-    caption,
-    portionGrams: portionGrams || undefined,
-  });
-  return Response.json({ meal, engine: "local" });
+  const approxBytes = Math.ceil((imageBase64.length * 3) / 4);
+  if (approxBytes > MAX_BYTES) {
+    return Response.json(
+      { error: "That photo is too large. Try a closer, smaller shot." },
+      { status: 413 },
+    );
+  }
+
+  try {
+    const meal = await analyzeWithFreeVision({
+      imageBase64,
+      restaurant,
+      dishHint,
+      quarterFound,
+      provider: auth.provider,
+      apiKey: auth.key,
+    });
+    return Response.json({ meal, engine: auth.provider });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Vision analysis failed.";
+    console.error("Vision analyze failed:", error);
+    return Response.json({ error: message }, { status: 502 });
+  }
 }
 
 function readString(body: unknown, key: string, max: number) {
@@ -42,33 +72,11 @@ function readString(body: unknown, key: string, max: number) {
   return ((body as Record<string, unknown>)[key] as string).trim().slice(0, max);
 }
 
-function readNumber(body: unknown, key: string) {
-  if (typeof body !== "object" || body === null || !(key in body)) return 0;
-  const value = Number((body as Record<string, unknown>)[key]);
-  return Number.isFinite(value) ? value : 0;
-}
-
-function parseLabels(body: unknown): FoodLabel[] {
-  if (
-    typeof body !== "object" ||
-    body === null ||
-    !("labels" in body) ||
-    !Array.isArray(body.labels)
-  ) {
-    return [];
-  }
-
-  return body.labels.flatMap((entry) => {
-    if (
-      typeof entry !== "object" ||
-      entry === null ||
-      !("label" in entry) ||
-      !("score" in entry) ||
-      typeof entry.label !== "string" ||
-      typeof entry.score !== "number"
-    ) {
-      return [];
-    }
-    return [{ label: entry.label, score: entry.score }];
-  });
+function readBoolean(body: unknown, key: string) {
+  return (
+    typeof body === "object" &&
+    body !== null &&
+    key in body &&
+    (body as Record<string, unknown>)[key] === true
+  );
 }

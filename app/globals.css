@@ -184,6 +184,31 @@ input {
   line-height: 1.6;
 }
 
+.setup-card {
+  margin-bottom: 22px;
+  padding: 22px 24px;
+  border: 1px solid rgba(240, 180, 90, 0.28);
+  border-radius: 24px;
+  background: rgba(240, 180, 90, 0.07);
+}
+
+.setup-card h2 {
+  margin: 8px 0 10px;
+  font-family: var(--font-serif);
+  font-size: 1.8rem;
+  font-weight: 500;
+}
+
+.setup-card p {
+  max-width: 62ch;
+  color: var(--ink-soft);
+  line-height: 1.55;
+}
+
+.setup-card a {
+  color: var(--gold);
+}
+
 .hero-aside {
   display: grid;
   gap: 10px;

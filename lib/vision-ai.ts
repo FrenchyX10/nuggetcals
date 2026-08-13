@@ -5,15 +5,13 @@ import { refineMealWithPublishedNutrition } from "@/lib/refine-meal";
 const SYSTEM = `You are a careful nutrition analyst looking at a real photo of food.
 
 Rules:
-- Identify every edible item that is actually visible: protein, sides, sauces, oils, cheese, bread, drinks.
-- Name foods specifically. If it is chicken, say grilled chicken / fried chicken / tenders / wings. Never call chicken a burger.
-- Estimate portion SIZE from the photo, not a generic serving:
-  - Dinner plates are usually 10–11 inches (26–28 cm)
-  - Use forks, knives, cups, cans, hands, boxes, and leftover vs full servings
-  - Estimate grams for each item as plated
-- Scale calories to THAT size. A small piece of chicken is not a 12 oz steak.
-- If a restaurant name is given, match an official menu item only if the photo really looks like that item.
-- Hidden calories: oil, butter, mayo, creamy sauce, cheese, fried coating, sugary drinks.
+- Identify every edible item that is actually visible. Be specific: blueberry pancakes vs fried chicken vs hamburger.
+- Never confuse pancakes/waffles with fried chicken. Never call chicken a burger.
+- If a US quarter coin is visible, it is exactly 24.26 mm (0.955 in) across. Use it as a ruler for homemade food grams.
+- Dinner plates are usually 10–11 inches if no coin is present.
+- If a restaurant name is given (Burger King, McDonald's, etc.), match the closest official menu item and use the official ONE serving calories. Do not scale a Whopper up because the photo is a close-up. Do not add fries or a drink unless they are clearly in the photo.
+- If the photo is a generic hamburger at Burger King, pick Hamburger or Cheeseburger, not a Whopper, unless it clearly is a Whopper.
+- Hidden calories for homemade food: oil, butter, mayo, sauce, cheese, fried coating.
 - If it is not food, set isFood false.
 - Return JSON only. Item calories must add up to totalCalories within about 5%.`;
 
@@ -21,6 +19,7 @@ export async function analyzeWithFreeVision(options: {
   imageBase64: string;
   restaurant: string;
   dishHint: string;
+  quarterFound?: boolean;
   provider: "groq" | "gemini";
   apiKey: string;
 }): Promise<MealAnalysis> {
@@ -50,10 +49,7 @@ async function callGroq(options: {
   dishHint: string;
   apiKey: string;
 }) {
-  const models = [
-    "qwen/qwen3.6-27b",
-    "meta-llama/llama-4-scout-17b-16e-instruct",
-  ];
+  const models = ["qwen/qwen3.6-27b"];
   let lastError = "Groq vision failed.";
 
   for (const model of models) {
@@ -79,6 +75,7 @@ function groqRequest(
     imageBase64: string;
     restaurant: string;
     dishHint: string;
+    quarterFound?: boolean;
     apiKey: string;
   },
   model: string,
@@ -99,7 +96,7 @@ function groqRequest(
         {
           role: "user",
           content: [
-            { type: "text", text: userPrompt(options.restaurant, options.dishHint) },
+            { type: "text", text: userPrompt(options.restaurant, options.dishHint, options.quarterFound) },
             {
               type: "image_url",
               image_url: {
@@ -117,6 +114,7 @@ async function callGemini(options: {
   imageBase64: string;
   restaurant: string;
   dishHint: string;
+  quarterFound?: boolean;
   apiKey: string;
 }) {
   const models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-3.6-flash"];
@@ -134,7 +132,7 @@ async function callGemini(options: {
             {
               role: "user",
               parts: [
-                { text: userPrompt(options.restaurant, options.dishHint) },
+                { text: userPrompt(options.restaurant, options.dishHint, options.quarterFound) },
                 {
                   inlineData: {
                     mimeType: "image/jpeg",
@@ -166,13 +164,14 @@ async function callGemini(options: {
   throw new Error(lastError);
 }
 
-function userPrompt(restaurant: string, dishHint: string) {
+function userPrompt(restaurant: string, dishHint: string, quarterFound = false) {
   return `Analyze this real-life food photo carefully.
 
 Restaurant name typed by the user: ${restaurant || "(none)"}
 What the user thinks it is: ${dishHint || "(not specified)"}
+A US quarter detector ${quarterFound ? "THINKS a quarter is in the photo" : "did not find a quarter"}. Confirm by looking. If a quarter is visible, use 24.26 mm as the scale.
 
-Look at the actual food. Estimate the size of each item in grams from the photo. Then estimate calories and macros for that size.
+If a restaurant is named, use official 1-serving menu calories. If homemade and a quarter is visible, estimate grams from the coin.
 
 Return a JSON object with exactly these keys:
 mealName, restaurant, matchedMenuItem, isFood, notFoodReason, totalCalories, calorieRangeLow, calorieRangeHigh, proteinG, carbsG, fatG, fiberG, sugarG, sodiumMg, overallConfidence, method, items, assumptions, precisionNotes, sources.

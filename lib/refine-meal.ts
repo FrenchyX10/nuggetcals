@@ -26,13 +26,20 @@ export function refineMealWithPublishedNutrition(
       chain,
     );
     if (!match) return item;
-    const grams = item.estimatedGrams > 20 ? item.estimatedGrams : match.grams;
-    const scale = grams / Math.max(match.grams, 1);
+    const official = Boolean(chain && match.restaurant === chain);
+    const grams = official
+      ? match.grams
+      : item.estimatedGrams > 20
+        ? item.estimatedGrams
+        : match.grams;
+    const scale = official ? 1 : grams / Math.max(match.grams, 1);
     return {
       ...item,
-      name: item.name,
+      name: official ? match.name : item.name,
       brandOrRestaurantItem: match.restaurant ?? item.brandOrRestaurantItem,
-      portionDescription: `${Math.round(grams)}g · ${item.portionDescription}`,
+      portionDescription: official
+        ? `1 official ${match.restaurant} serving · ${match.grams}g`
+        : `${Math.round(grams)}g · ${item.portionDescription}`,
       estimatedGrams: Math.round(grams),
       calories: round(match.calories * scale),
       proteinG: round1(match.proteinG * scale),
@@ -46,7 +53,9 @@ export function refineMealWithPublishedNutrition(
         : match.source.startsWith("USDA")
           ? ("usda" as const)
           : ("nutrition_database" as const),
-      notes: `Published ${match.source} scaled to the size seen in the photo (${Math.round(grams)}g). ${item.notes}`.trim(),
+      notes: official
+        ? `Official ${match.restaurant} 1-serving calories`
+        : `Published ${match.source} scaled to ${Math.round(grams)}g. ${item.notes}`.trim(),
     };
   });
 
@@ -92,9 +101,11 @@ export function refineMealWithPublishedNutrition(
     method: chain && usedPublished ? "hybrid" : usedPublished ? "usda" : meal.method,
     assumptions: [
       "A free vision model looked at the photo and estimated each item's size.",
-      usedPublished
-        ? "Calories were then scaled from published restaurant / USDA numbers to that size."
-        : "Published nutrition was not a close match, so the model's own calorie estimate was kept.",
+      chain && usedPublished
+        ? "Chain items use official 1-serving menu calories, not a photo size guess."
+        : usedPublished
+          ? "Calories were scaled from published USDA-style numbers."
+          : "Published nutrition was not a close match, so the model's own calorie estimate was kept.",
       ...meal.assumptions,
     ].slice(0, 6),
     precisionNotes:
