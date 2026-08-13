@@ -151,7 +151,7 @@ export function SnacksApp() {
               your day.
             </p>
           </div>
-          <aside className="hero-aside">
+          <aside className="hero-aside hide-mobile">
             <p>
               <strong>Photo or search</strong>
               Snap the bag. Vision names the snack, then published labels

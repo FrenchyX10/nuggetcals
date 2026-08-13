@@ -213,7 +213,7 @@ export function HomemadeApp() {
               Count calories to see the number and add it to today.
             </p>
           </div>
-          <aside className="hero-aside">
+          <aside className="hero-aside hide-mobile">
             <p>
               <strong>Write it simply</strong>
               1 egg, 2 bread, 1 tbsp butter. No extra taps needed.

@@ -831,6 +831,10 @@ video {
 }
 
 @media (max-width: 860px) {
+  .hide-mobile {
+    display: none !important;
+  }
+
   .workspace,
   .result-top,
   .servings,
@@ -841,30 +845,31 @@ video {
   }
 
   .page-shell {
-    width: calc(100% - 24px);
-    padding: 12px 0 calc(96px + env(safe-area-inset-bottom));
+    width: calc(100% - 28px);
+    padding: 10px 0 calc(88px + env(safe-area-inset-bottom));
   }
 
   .topbar {
     position: sticky;
     top: env(safe-area-inset-top);
     z-index: 20;
-    gap: 10px;
-    margin-bottom: 18px;
-    padding: 8px 8px 8px 8px;
-    border-radius: 22px;
+    gap: 8px;
+    margin-bottom: 14px;
+    padding: 6px 8px 6px 6px;
+    border-radius: 18px;
   }
 
   .brand {
     flex: 1 1 auto;
-    font-size: 1.05rem;
+    gap: 8px;
+    font-size: 1rem;
     min-width: 0;
   }
 
   .mark {
-    width: 32px;
-    height: 32px;
-    border-radius: 10px;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
   }
 
   .nav-links {
@@ -873,39 +878,43 @@ video {
 
   .today-pill {
     flex: 0 0 auto;
-    padding: 7px 10px;
-    gap: 6px;
-    font-size: 0.74rem;
+    padding: 6px 10px;
+    gap: 4px;
+    font-size: 0.72rem;
+  }
+
+  .today-pill span {
+    display: none;
   }
 
   .today-pill strong {
-    font-size: 0.9rem;
+    font-size: 0.88rem;
   }
 
   .dock {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     position: fixed;
-    left: 12px;
-    right: 12px;
-    bottom: calc(10px + env(safe-area-inset-bottom));
+    left: 10px;
+    right: 10px;
+    bottom: calc(8px + env(safe-area-inset-bottom));
     z-index: 30;
-    padding: 6px;
+    padding: 4px;
     border: 1px solid var(--line);
-    border-radius: 22px;
-    background: rgba(18, 14, 11, 0.88);
+    border-radius: 18px;
+    background: rgba(18, 14, 11, 0.92);
     backdrop-filter: blur(18px);
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.32);
   }
 
   .dock a {
     display: grid;
     place-items: center;
-    min-height: 44px;
-    border-radius: 16px;
+    min-height: 42px;
+    border-radius: 14px;
     text-decoration: none;
     color: var(--ink-soft);
-    font-size: 0.78rem;
+    font-size: 0.75rem;
     font-weight: 650;
   }
 
@@ -915,46 +924,120 @@ video {
   }
 
   .hero {
-    gap: 16px;
-    margin-bottom: 18px;
+    gap: 8px;
+    margin-bottom: 12px;
   }
 
   .hero h1 {
     max-width: none;
-    margin: 8px 0 12px;
-    font-size: clamp(2.1rem, 11vw, 3.2rem);
-    line-height: 0.95;
+    margin: 4px 0 6px;
+    font-size: 1.7rem;
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+  }
+
+  .eyebrow {
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
   }
 
   .lede {
-    font-size: 1rem;
+    font-size: 0.92rem;
+    line-height: 1.4;
+    max-width: none;
   }
 
-  .hero-aside {
-    padding: 14px;
+  .setup-card {
+    margin-bottom: 14px;
+    padding: 14px 16px;
+    border-radius: 18px;
+  }
+
+  .setup-card h2 {
+    font-size: 1.25rem;
+    margin: 6px 0 8px;
+  }
+
+  .setup-card p {
+    font-size: 0.9rem;
+  }
+
+  .composer,
+  .side .stat-card,
+  .history,
+  .result-card,
+  .snack-card {
+    border-radius: 18px;
+    box-shadow: none;
+  }
+
+  .composer {
+    padding: 10px;
   }
 
   .dropzone {
-    min-height: 220px;
+    min-height: 168px;
+    border-radius: 16px;
   }
 
   .dropzone img {
-    height: 220px;
+    height: 168px;
+  }
+
+  .drop-copy {
+    gap: 4px;
+    padding: 12px;
   }
 
   .drop-copy strong {
-    font-size: 1.55rem;
+    font-size: 1.25rem;
+  }
+
+  .drop-copy small {
+    font-size: 0.78rem;
   }
 
   .nugget-float {
-    width: 72px;
-    height: 72px;
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
+  }
+
+  .photo-actions {
+    margin: 8px 0 12px;
+    gap: 6px;
+  }
+
+  .field {
+    margin-bottom: 10px;
+    gap: 6px;
+  }
+
+  .field span,
+  .field-label {
+    font-size: 0.82rem;
+  }
+
+  .field input,
+  .field textarea,
+  .ingredient-box {
+    padding: 12px 14px;
+    border-radius: 14px;
   }
 
   .ghost,
   .chip {
-    min-height: 40px;
-    padding: 10px 14px;
+    min-height: 38px;
+    padding: 8px 12px;
+    font-size: 0.84rem;
+  }
+
+  .size-field {
+    margin: 8px 0 2px;
+  }
+
+  .size-picks {
+    margin: 0 0 8px;
   }
 
   .size-picks .chip {
@@ -963,23 +1046,58 @@ video {
   }
 
   .analyze {
-    min-height: 52px;
-    padding: 16px;
+    min-height: 48px;
+    margin-top: 12px;
+    padding: 14px;
+    border-radius: 14px;
+    font-size: 1rem;
+  }
+
+  .hint,
+  .error,
+  .empty,
+  .precision {
+    font-size: 0.84rem;
+    margin: 8px 0;
+  }
+
+  .stat-card,
+  .history {
+    padding: 14px;
   }
 
   .stat-number {
-    font-size: 2.8rem;
+    font-size: 2.2rem;
   }
 
-  .composer,
-  .side .stat-card,
-  .history,
-  .result-card {
-    border-radius: 22px;
+  .stat-unit,
+  .plan-left {
+    margin-bottom: 10px;
+  }
+
+  .workspace {
+    gap: 12px;
+  }
+
+  .side {
+    gap: 12px;
+  }
+
+  .results {
+    margin-top: 12px;
   }
 
   .result-card {
-    padding: 20px;
+    padding: 16px;
+  }
+
+  .result-card.muted,
+  .result-card.scanning {
+    min-height: 0;
+  }
+
+  .result-card h2 {
+    font-size: 1.45rem;
   }
 
   .calorie-block {
@@ -987,17 +1105,56 @@ video {
   }
 
   .calorie-block span {
-    font-size: clamp(2.6rem, 14vw, 3.8rem);
+    font-size: 2.4rem;
+  }
+
+  .how-list {
+    gap: 8px;
+  }
+
+  .how-list li {
+    padding: 12px;
   }
 
   .footer {
     display: grid;
-    gap: 8px;
-    padding-bottom: 8px;
+    gap: 4px;
+    margin-top: 24px;
+    padding-bottom: 4px;
+  }
+
+  .snack-workspace {
+    margin-bottom: 12px;
+  }
+
+  .snack-cats {
+    margin: 4px 0 12px;
   }
 
   .snack-grid {
     grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .snack-card {
+    padding: 14px;
+  }
+
+  .snack-card h2 {
+    font-size: 1.05rem;
+  }
+
+  .snack-cals strong {
+    font-size: 1.6rem;
+  }
+
+  .resto-picker {
+    margin-bottom: 8px;
+  }
+
+  .menu-open {
+    width: 100%;
+    margin-bottom: 8px;
   }
 }
 

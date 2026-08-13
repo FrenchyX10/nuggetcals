@@ -118,7 +118,7 @@ export function DrinksApp() {
               Tap one to add it to today.
             </p>
           </div>
-          <aside className="hero-aside">
+          <aside className="hero-aside hide-mobile">
             <p>
               <strong>Soda</strong>
               Full-sugar Coke, Pepsi, Sprite, Dew, and the rest.

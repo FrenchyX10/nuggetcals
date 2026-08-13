@@ -375,7 +375,7 @@ export function BitewiseApp() {
               serving size, then estimates calories from published nutrition.
             </p>
           </div>
-          <aside className="hero-aside">
+          <aside className="hero-aside hide-mobile">
             <p>
               <strong>Identify the plate</strong>
               Vision AI names what is actually on the plate — pancakes stay
@@ -429,7 +429,7 @@ export function BitewiseApp() {
             </button>
           </section>
         ) : (
-          <p className="hint">
+          <p className="hint hide-mobile">
             Vision AI is on. Identify the plate, look up the size, then estimate
             calories. Add a quarter next to homemade food for a closer scale.
           </p>
@@ -486,7 +486,7 @@ export function BitewiseApp() {
               onPickItem={pickMenuItem}
             />
 
-            <div className="chips" aria-label="Restaurant shortcuts">
+            <div className="chips hide-mobile" aria-label="Restaurant shortcuts">
               {RESTAURANTS.map((name) => (
                 <button
                   key={name}
@@ -513,7 +513,7 @@ export function BitewiseApp() {
               />
             </label>
 
-            <div className="chips" aria-label="Dish shortcuts">
+            <div className="chips hide-mobile" aria-label="Dish shortcuts">
               {DISH_HINTS.map((name) => (
                 <button
                   key={name}
@@ -561,7 +561,7 @@ export function BitewiseApp() {
             {!imageBase64 ? (
               <p className="hint">Upload a new photo to analyze. Opening a past scan only shows saved results.</p>
             ) : null}
-            <p className="hint">
+            <p className="hint hide-mobile">
               Also log{" "}
               <a href="/snacks">snacks</a>,{" "}
               <a href="/homemade">homemade</a>, or{" "}
