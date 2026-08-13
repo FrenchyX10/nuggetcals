@@ -13,7 +13,7 @@ Rules:
 - If the photo is a generic hamburger at Burger King, pick Hamburger or Cheeseburger, not a Whopper, unless it clearly is a Whopper.
 - Hidden calories for homemade food: oil, butter, mayo, sauce, cheese, fried coating.
 - If it is not food, set isFood false.
-- Return JSON only. Item calories must add up to totalCalories within about 5%.`;
+- Reply with a single JSON object only. No markdown fences. No extra text.`;
 
 export async function analyzeWithFreeVision(options: {
   imageBase64: string;
@@ -55,10 +55,18 @@ async function callGroq(options: {
   for (const model of models) {
     const response = await groqRequest(options, model);
     const data = (await response.json()) as {
-      error?: { message?: string };
+      error?: { message?: string; failed_generation?: string };
       choices?: Array<{ message?: { content?: string } }>;
     };
     if (!response.ok) {
+      if (data.error?.failed_generation) {
+        try {
+          extractJson(data.error.failed_generation);
+          return data.error.failed_generation;
+        } catch {
+          /* keep trying */
+        }
+      }
       lastError = data.error?.message || `Groq failed (${response.status}).`;
       continue;
     }
@@ -88,9 +96,9 @@ function groqRequest(
     },
     body: JSON.stringify({
       model,
-      temperature: 0.15,
-      max_completion_tokens: 2200,
-      response_format: { type: "json_object" },
+      temperature: 0.1,
+      max_completion_tokens: 3500,
+      reasoning_effort: "none",
       messages: [
         { role: "system", content: SYSTEM },
         {
@@ -186,12 +194,14 @@ sources is an array of {title, url}.`;
 }
 
 function extractJson(text: string) {
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/);
-  const raw = fenced?.[1] ?? text;
+  const withoutThink = text.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+  const fenced = withoutThink.match(/```(?:json)?\s*([\s\S]*?)```/);
+  const raw = (fenced?.[1] ?? withoutThink).trim();
   const start = raw.indexOf("{");
   const end = raw.lastIndexOf("}");
   if (start < 0 || end <= start) throw new Error("No JSON in the vision response.");
-  return JSON.parse(raw.slice(start, end + 1)) as Record<string, unknown>;
+  const slice = raw.slice(start, end + 1).replace(/,\s*([}\]])/g, "$1");
+  return JSON.parse(slice) as Record<string, unknown>;
 }
 
 function normalizeMeal(value: Record<string, unknown>, restaurantInput: string) {
