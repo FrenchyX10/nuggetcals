@@ -118,10 +118,32 @@ export function drinksFor(group: DrinkGroup, query = "") {
   return DRINKS.filter((drink) => {
     if (drink.group !== group) return false;
     if (!needle) return true;
-    const blob = normalizeName(`${drink.name} ${drink.aliases.join(" ")}`);
-    return (
-      blob.includes(needle) ||
-      needle.split(" ").every((token) => token.length < 2 || blob.includes(token))
-    );
+    return drinkMatches(drink, needle);
   });
+}
+
+export function searchAllDrinks(query: string) {
+  const needle = normalizeName(query);
+  if (!needle) return [];
+  return DRINKS.map((drink) => {
+    const blob = normalizeName(`${drink.name} ${drink.aliases.join(" ")}`);
+    let score = 0;
+    if (blob === needle || normalizeName(drink.name) === needle) score += 12;
+    if (blob.includes(needle) || needle.includes(normalizeName(drink.name))) score += 6;
+    for (const token of needle.split(" ").filter((part) => part.length > 1)) {
+      if (blob.includes(token)) score += 2;
+    }
+    return { drink, score };
+  })
+    .filter((row) => row.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .map((row) => row.drink);
+}
+
+function drinkMatches(drink: DrinkRecord, needle: string) {
+  const blob = normalizeName(`${drink.name} ${drink.aliases.join(" ")}`);
+  return (
+    blob.includes(needle) ||
+    needle.split(" ").every((token) => token.length < 2 || blob.includes(token))
+  );
 }

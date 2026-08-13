@@ -9,6 +9,7 @@ import {
   DRINK_GROUPS,
   DRINKS,
   drinksFor,
+  searchAllDrinks,
   type DrinkGroup,
   type DrinkRecord,
 } from "@/lib/drinks-data";
@@ -23,8 +24,8 @@ export function DrinksApp() {
   const [query, setQuery] = useState("");
   const [servings, setServings] = useState(1);
   const [addedName, setAddedName] = useState<string | null>(null);
-  const [customName, setCustomName] = useState("");
   const [customCals, setCustomCals] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setHistory(loadHistory());
@@ -33,7 +34,12 @@ export function DrinksApp() {
 
   const today = useMemo(() => todayTotals(history), [history]);
   const remaining = planCalories - today.calories;
-  const shown = useMemo(() => drinksFor(group, query), [group, query]);
+  const matches = useMemo(() => searchAllDrinks(query), [query]);
+  const shown = useMemo(
+    () => (query.trim() ? matches : drinksFor(group)),
+    [query, matches, group],
+  );
+  const bestMatch = matches[0] ?? null;
   const activeGroup = DRINK_GROUPS.find((item) => item.id === group);
 
   function addDrink(drink: DrinkRecord) {
@@ -61,21 +67,33 @@ export function DrinksApp() {
     window.setTimeout(() => setAddedName(null), 1800);
   }
 
-  function addCustom() {
+  function logTypedDrink() {
+    const name = query.trim();
+    if (!name) {
+      setError("Type a drink name first.");
+      return;
+    }
+    if (bestMatch) {
+      addDrink(bestMatch);
+      setError(null);
+      return;
+    }
     const calories = Number(customCals);
-    if (!Number.isFinite(calories) || calories < 0 || !customName.trim()) return;
+    if (!Number.isFinite(calories) || calories < 0) {
+      setError("Type the calories for that drink, then tap Log drink.");
+      return;
+    }
     const meal = mealFromTotals({
-      mealName: customName.trim(),
+      mealName: name,
       restaurant: "Drink",
-      calories,
+      calories: calories * servings,
       method: "visual_estimate",
       assumptions: ["Drink calories typed in by you."],
       precisionNotes: "Custom drink log.",
     });
     setHistory(addHistory(historyFromMeal(meal, THUMB, "Drink")));
-    setAddedName(customName.trim());
-    setCustomName("");
-    setCustomCals("");
+    setAddedName(name);
+    setError(null);
     window.setTimeout(() => setAddedName(null), 1800);
   }
 
@@ -119,14 +137,35 @@ export function DrinksApp() {
         <section className="workspace snack-workspace">
           <div className="composer">
             <label className="field">
-              <span>Find a drink</span>
+              <span>Type a drink</span>
               <input
                 value={query}
-                onChange={(event) => setQuery(event.target.value)}
+                onChange={(event) => {
+                  setQuery(event.target.value);
+                  setError(null);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") logTypedDrink();
+                }}
                 placeholder="Coke, Diet Pepsi, latte…"
                 maxLength={80}
               />
             </label>
+            {query.trim() && !bestMatch ? (
+              <label className="field">
+                <span>Calories for {query.trim()}</span>
+                <input
+                  type="number"
+                  min={0}
+                  value={customCals}
+                  onChange={(event) => {
+                    setCustomCals(event.target.value);
+                    setError(null);
+                  }}
+                  placeholder="140"
+                />
+              </label>
+            ) : null}
             <div className="size-field">
               <p className="field-label">How many?</p>
               <div className="chips size-picks" aria-label="Drink servings">
@@ -142,37 +181,18 @@ export function DrinksApp() {
                 ))}
               </div>
             </div>
-            <div className="custom-drink">
-              <p className="field-label">Not listed? Log it yourself</p>
-              <div className="quick-macros">
-                <label className="field">
-                  <span>Name</span>
-                  <input
-                    value={customName}
-                    onChange={(event) => setCustomName(event.target.value)}
-                    placeholder="Fountain soda"
-                  />
-                </label>
-                <label className="field">
-                  <span>Calories</span>
-                  <input
-                    type="number"
-                    min={0}
-                    value={customCals}
-                    onChange={(event) => setCustomCals(event.target.value)}
-                    placeholder="200"
-                  />
-                </label>
-              </div>
-              <button
-                type="button"
-                className="ghost"
-                disabled={!customName.trim() || customCals === ""}
-                onClick={addCustom}
-              >
-                Add custom drink
+            {query.trim() ? (
+              <button type="button" className="analyze" onClick={logTypedDrink}>
+                {addedName
+                  ? "Added to today"
+                  : bestMatch
+                    ? `Log ${bestMatch.name}${servings > 1 ? ` × ${servings}` : ""} · ${kcal(bestMatch.calories * servings)} kcal`
+                    : `Log ${query.trim()}`}
               </button>
-            </div>
+            ) : (
+              <p className="hint">Type a drink name to log it, or pick one below.</p>
+            )}
+            {error ? <p className="error">{error}</p> : null}
           </div>
           <aside className="side">
             <div className="stat-card" id="log">
@@ -240,7 +260,11 @@ export function DrinksApp() {
           ))}
         </ul>
         {shown.length === 0 ? (
-          <p className="empty">No drinks in that filter. Try another tab or log a custom drink.</p>
+          <p className="empty">
+            {query.trim()
+              ? "No listed match. Type the calories above, then tap Log drink."
+              : "Nothing in that tab. Type a drink name to log it."}
+          </p>
         ) : null}
       </main>
 
