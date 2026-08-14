@@ -1,6 +1,6 @@
 import { kcal } from "@/lib/format";
 
-export type SitePage = "meals" | "snacks" | "homemade" | "drinks" | "trends";
+export type SitePage = "meals" | "snacks" | "homemade" | "drinks" | "trends" | "nugget";
 
 const LINKS: { id: SitePage; href: string; label: string; short: string }[] = [
   { id: "meals", href: "/", label: "Meals", short: "Meals" },
@@ -8,6 +8,7 @@ const LINKS: { id: SitePage; href: string; label: string; short: string }[] = [
   { id: "homemade", href: "/homemade", label: "Homemade", short: "Home" },
   { id: "drinks", href: "/drinks", label: "Drinks", short: "Drinks" },
   { id: "trends", href: "/trends", label: "Trends", short: "Trends" },
+  { id: "nugget", href: "/nugget", label: "Your Nugget", short: "Nugget" },
 ];
 
 export function SiteHeader({

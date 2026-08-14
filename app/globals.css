@@ -893,7 +893,7 @@ video {
 
   .dock {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(6, 1fr);
     position: fixed;
     left: 10px;
     right: 10px;
@@ -1258,6 +1258,287 @@ video {
   font-family: var(--font-serif);
   font-size: 1.35rem;
   color: var(--gold-2);
+}
+
+.nug-page {
+  display: grid;
+  gap: 18px;
+}
+
+.nug-hero {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  padding: 18px 14px 20px;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: var(--card);
+}
+
+.nug-bank {
+  justify-self: end;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(240, 180, 90, 0.12);
+  border: 1px solid rgba(240, 180, 90, 0.28);
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+
+.nug-bank strong {
+  margin-left: 6px;
+  color: var(--gold-2);
+  font-size: 1.05rem;
+}
+
+.nug-stage {
+  position: relative;
+  width: min(320px, 86vw);
+  height: min(320px, 86vw);
+  display: grid;
+  place-items: center;
+  margin: 8px 0 4px;
+}
+
+.nug-bob {
+  position: relative;
+  width: 70%;
+  animation: nug-float 2.6s ease-in-out infinite;
+}
+
+.nug-body {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 40%;
+  filter: drop-shadow(0 16px 28px rgba(0, 0, 0, 0.35));
+}
+
+.color-honey .nug-body {
+  filter: sepia(0.25) saturate(1.35) drop-shadow(0 16px 28px rgba(0, 0, 0, 0.35));
+}
+.color-golden .nug-body {
+  filter: sepia(0.45) hue-rotate(8deg) saturate(1.55) drop-shadow(0 16px 28px rgba(0, 0, 0, 0.35));
+}
+.color-spicy .nug-body {
+  filter: hue-rotate(-18deg) saturate(1.45) drop-shadow(0 16px 28px rgba(0, 0, 0, 0.35));
+}
+.color-matcha .nug-body {
+  filter: hue-rotate(72deg) saturate(0.95) drop-shadow(0 16px 28px rgba(0, 0, 0, 0.35));
+}
+.color-midnight .nug-body {
+  filter: hue-rotate(200deg) saturate(0.55) brightness(0.72) drop-shadow(0 16px 28px rgba(0, 0, 0, 0.35));
+}
+.color-cotton .nug-body {
+  filter: hue-rotate(290deg) saturate(1.25) brightness(1.08) drop-shadow(0 16px 28px rgba(0, 0, 0, 0.35));
+}
+
+.nug-face {
+  position: absolute;
+  left: 16%;
+  top: 28%;
+  width: 68%;
+  height: 48%;
+  pointer-events: none;
+  fill: #3a2414;
+}
+
+.nug-eye {
+  transform-origin: center;
+  animation: nug-blink 4.2s infinite;
+}
+
+.nug-mouth {
+  fill: #5a2a24;
+}
+
+.nug-acc {
+  position: absolute;
+  font-size: 2.2rem;
+  line-height: 1;
+  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.25));
+}
+
+.acc-bow {
+  top: -6%;
+  right: 10%;
+}
+.acc-chef {
+  top: -18%;
+  left: 28%;
+}
+.acc-shades {
+  top: 30%;
+  left: 22%;
+  font-size: 2.6rem;
+}
+.acc-crown {
+  top: -16%;
+  left: 32%;
+}
+.acc-sprout {
+  top: -10%;
+  left: 38%;
+}
+.acc-bandana {
+  top: 8%;
+  left: 30%;
+}
+
+.nug-stage.is-boom .nug-bob {
+  animation: nug-pop 0.7s ease-out forwards;
+}
+
+.nug-boom-label {
+  position: absolute;
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 2.4rem;
+  color: #ff8a3d;
+  animation: nug-boom-text 0.8s ease-out;
+}
+
+.nug-mood {
+  margin: 8px 0 4px;
+  max-width: 36ch;
+  color: var(--ink-soft);
+  line-height: 1.4;
+}
+
+.nug-kcal {
+  margin: 0 0 10px;
+  color: var(--gold-2);
+  font-weight: 650;
+}
+
+.nug-warn {
+  margin: 0;
+  color: #ffb4a2;
+}
+
+.nug-collect {
+  max-width: 280px;
+}
+
+.nug-shop {
+  padding: 6px 0 20px;
+}
+
+.nug-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nug-sku {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  min-height: 108px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #1b1510;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.nug-sku.is-on {
+  border-color: var(--gold);
+  background: rgba(240, 180, 90, 0.1);
+}
+
+.nug-sku small {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.nug-sku em {
+  font-style: normal;
+  color: var(--gold-2);
+  font-size: 0.82rem;
+}
+
+.nug-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(78px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 40;
+  margin: 0;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: #2a211a;
+  border: 1px solid var(--gold);
+  color: var(--gold-2);
+  white-space: nowrap;
+}
+
+@keyframes nug-float {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -8px;
+  }
+}
+
+@keyframes nug-blink {
+  0%,
+  42%,
+  48%,
+  100% {
+    transform: scaleY(1);
+  }
+  45% {
+    transform: scaleY(0.12);
+  }
+}
+
+@keyframes nug-pop {
+  0% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+  70% {
+    transform: scale(1.45);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.15);
+    opacity: 0.15;
+  }
+}
+
+@keyframes nug-boom-text {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  40% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 860px) {
+  .nug-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .nug-stage {
+    width: min(260px, 78vw);
+    height: min(260px, 78vw);
+  }
 }
 
 .resto-picker {
