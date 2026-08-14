@@ -15,6 +15,13 @@ import {
   parseFamilyCount,
   shouldMultiplyByCount,
 } from "@/lib/food-families";
+import {
+  expectedCalorieRange,
+  hitFitsIdentity,
+  identityAnchor,
+  inCalorieBand,
+  researchQuery,
+} from "@/lib/identity-calories";
 
 export type CalorieHit = {
   name: string;
@@ -185,7 +192,7 @@ export async function enrichCaloriesFromSources(
       ...meal.assumptions.filter((line) => !line.startsWith("Step 3:")),
       usedOfficial && !usedWeb
         ? "Step 3: Used the official chain menu serving — not a web average."
-        : "Step 3: Searched USDA, FatSecret, Open Food Facts, and other nutrition sites, then concluded one serving from the numbers that agreed.",
+        : "Step 3: Researched calories for the identified dish and portion, and ignored lookups that were a different food.",
     ].slice(0, 7),
     precisionNotes: usedOfficial
       ? "Official chain calories stay official. Homemade items are a consensus from multiple published sites, scaled to small / medium / large."
@@ -213,20 +220,16 @@ async function enrichItem(
     : parsePieceCount(`${item.name} ${item.portionDescription} ${item.notes}`, 0) ||
       parseFamilyCount(`${item.name} ${item.portionDescription} ${item.notes}`, 0);
   const family = detectFoodFamily(item.name, item.notes, item.portionDescription);
-  const query = [
-    restaurant,
-    pieces > 0
-      ? `${item.name} ${pieces} ${family === "pizza" ? "slices" : family === "taco" ? "tacos" : "pieces"} calories each`
-      : item.name,
-  ]
-    .filter(Boolean)
-    .join(" ");
   const size = (item.portionSize ?? "medium") as PortionSize;
+  const lookupName = [restaurant, item.name].filter(Boolean).join(" ");
+  const query = pieces > 0
+    ? `${item.name} ${pieces} ${family === "pizza" ? "slices" : family === "taco" ? "tacos" : "pieces"} calories each`
+    : researchQuery(item.name, SIZE_LABEL[size], item.notes);
   const [usda, off, local, fatsecret] = await Promise.all([
-    searchUsda(query).catch(() => [] as CalorieHit[]),
-    searchOpenFoodFacts(query).catch(() => [] as CalorieHit[]),
-    Promise.resolve(searchLocal(query)),
-    searchFatSecret(query).catch(() => [] as CalorieHit[]),
+    searchUsda(lookupName).catch(() => [] as CalorieHit[]),
+    searchOpenFoodFacts(lookupName).catch(() => [] as CalorieHit[]),
+    Promise.resolve(searchLocal(lookupName)),
+    searchFatSecret(lookupName).catch(() => [] as CalorieHit[]),
   ]);
 
   const relatedWeb = webHits.filter((hit) => namesOverlap(query, hit.name) || namesOverlap(query, hit.source));
@@ -249,7 +252,7 @@ async function enrichItem(
         ]
       : [];
 
-  const hits = dedupe([
+  const rawHits = dedupe([
     ...sushiPieceHits(item),
     ...(family ? familyUnitHits(item.name, `${item.notes} ${item.portionDescription}`, family) : []),
     ...local,
@@ -258,21 +261,72 @@ async function enrichItem(
     ...fatsecret,
     ...relatedWeb,
     ...current,
-  ]).slice(0, 14);
+  ]);
+  const anchor = identityAnchor(item);
+  const band = expectedCalorieRange(
+    item.name,
+    `${item.notes} ${item.portionDescription}`,
+    anchor?.calories ?? (item.calories > 0 ? item.calories : undefined),
+  );
+  const hits = rawHits
+    .filter(
+      (hit) =>
+        hitFitsIdentity(hit.name, item.name, item.notes) &&
+        inCalorieBand(hit.calories, band),
+    )
+    .slice(0, 14);
 
-  if (hits.length === 0) return item;
+  const fallback = anchor
+    ? {
+        calories: anchor.calories,
+        proteinG: "proteinG" in anchor ? Number(anchor.proteinG) : item.proteinG,
+        carbsG: "carbsG" in anchor ? Number(anchor.carbsG) : item.carbsG,
+        fatG: "fatG" in anchor ? Number(anchor.fatG) : item.fatG,
+        fiberG: "fiberG" in anchor ? Number(anchor.fiberG) : item.fiberG,
+        sugarG: "sugarG" in anchor ? Number(anchor.sugarG) : item.sugarG,
+        sodiumMg: "sodiumMg" in anchor ? Number(anchor.sodiumMg) : item.sodiumMg,
+        grams: "grams" in anchor ? Number(anchor.grams) : item.estimatedGrams || 150,
+        low: band.low,
+        high: band.high,
+        reason: `Looked up ${anchor.name} as identified. Kept the typical serving for that dish.`,
+        source: anchor.source,
+        url: "sourceUrl" in anchor ? String(anchor.sourceUrl) : "https://fdc.nal.usda.gov/",
+      }
+    : null;
 
-  const picked = apiKey
-    ? await concludeEstimate(query, size, hits, apiKey).catch(() =>
+  if (hits.length === 0) {
+    if (!fallback) return item;
+    return finishItem(item, fallback, pieces, size, 1);
+  }
+
+  let picked = apiKey
+    ? await concludeEstimate(query, size, hits, apiKey, item.name, band).catch(() =>
         medianConsensus(hits),
       )
     : medianConsensus(hits);
+  if (!inCalorieBand(picked.calories, band)) {
+    picked = medianConsensus(hits);
+  }
+  if (!inCalorieBand(picked.calories, band) && fallback) {
+    picked = {
+      ...fallback,
+      reason: `Research drifted off this dish. Used the identified ${item.name} serving.`,
+    };
+  }
 
+  return finishItem(item, picked, pieces, size, hits.length);
+}
+
+function finishItem(
+  item: FoodItem,
+  picked: Concluded,
+  pieces: number,
+  size: PortionSize,
+  sourceCount: number,
+): FoodItem {
   const scale = unitCalorieScale(item, picked, pieces, size);
-  const sourceCount = hits.length;
   const spread =
     picked.calories > 0 ? (picked.high - picked.low) / picked.calories : 0.2;
-
   return {
     ...item,
     calories: Math.round(picked.calories * scale),
@@ -335,15 +389,15 @@ async function searchNutritionSites(
           {
             role: "system",
             content:
-              "You look up published nutrition. Search USDA FoodData Central, FatSecret, Nutritionix, CalorieKing, MyFoodData, Open Food Facts, and the official restaurant page if a chain is named. Visit at least three different sites. Prefer a typical 1-serving plated portion, not a 100g lab row or a whole recipe. Reply JSON only.",
+              "The dish names are already identified. Search USDA, FatSecret, Nutritionix, CalorieKing, MyFoodData, and Open Food Facts for those EXACT dishes and a typical plated portion. Do not swap in a different food (garden salad is not chicken Caesar, cobb, or a burrito bowl). Prefer a typical 1-serving portion, not a 100g lab row. Reply JSON only.",
           },
           {
             role: "user",
             content: `Restaurant: ${restaurant || "none (homemade / generic)"}
-Identified foods:
+Identified foods (do not rename):
 ${foods}
 
-For each food find calorie numbers from multiple sites, then conclude one typical medium serving.
+For each food search “<exact name> calories per serving” on multiple sites, then conclude one typical serving for that name.
 
 Return JSON:
 {"items":[{"name":"","calories":0,"proteinG":0,"carbsG":0,"fatG":0,"fiberG":0,"sugarG":0,"sodiumMg":0,"grams":0,"low":0,"high":0,"sources":[{"title":"","url":"","calories":0}]}]}`,
@@ -436,6 +490,8 @@ async function concludeEstimate(
   size: PortionSize,
   hits: CalorieHit[],
   apiKey: string,
+  identifiedName?: string,
+  band?: { low: number; high: number },
 ): Promise<Concluded> {
   const list = hits
     .map(
@@ -461,14 +517,16 @@ async function concludeEstimate(
           {
             role: "system",
             content:
-              'You conclude one typical 1-serving calorie estimate from published numbers. Do not invent values that no source supports. Prefer numbers that several sites agree on. Prefer USDA / official menu / FatSecret over blogs. Prefer a plated meal serving, not a 100g lab row or a giant family pack. If the food is sushi, pizza, tacos, wings, or pancakes, pick a 1-piece / 1-slice row, not a whole platter or pie. Reply JSON only: {"calories":0,"proteinG":0,"carbsG":0,"fatG":0,"fiberG":0,"sugarG":0,"sodiumMg":0,"grams":0,"low":0,"high":0,"index":0,"reason":""}',
+              'The food is already identified. Conclude calories for THAT dish and a typical plated portion only. Do not invent values. Ignore rows that are a different food (a garden salad is not a chicken salad, cobb, or burrito bowl). Prefer USDA / FatSecret rows whose name matches. If the food is sushi, pizza, tacos, wings, or pancakes, pick a 1-piece / 1-slice row. Reply JSON only: {"calories":0,"proteinG":0,"carbsG":0,"fatG":0,"fiberG":0,"sugarG":0,"sodiumMg":0,"grams":0,"low":0,"high":0,"index":0,"reason":""}',
           },
           {
             role: "user",
-            content: `Food: ${query}
+            content: `Identified food: ${identifiedName || query}
+Research query: ${query}
 Identified plate size (apply later, not now): ${size}
+${band ? `Plausible kcal range for this dish: ${band.low}–${band.high}.` : ""}
 
-Published numbers from multiple sites:
+Published numbers (already filtered to this dish):
 ${list}`,
           },
         ],
@@ -590,9 +648,16 @@ function sushiPieceHits(item: FoodItem): CalorieHit[] {
 function searchLocal(query: string): CalorieHit[] {
   const needle = normalizeName(query);
   if (!needle) return [];
+  const qTokens = needle.split(" ").filter((token) => token.length > 2);
   return FOODS.filter((food) => {
-    const blob = normalizeName(`${food.restaurant ?? ""} ${food.name} ${food.aliases.join(" ")}`);
-    return blob.includes(needle) || needle.includes(normalizeName(food.name));
+    if (food.restaurant) return false;
+    const name = normalizeName(food.name);
+    const aliases = food.aliases.map(normalizeName);
+    if (name === needle || aliases.includes(needle)) return true;
+    const blob = normalizeName(`${food.name} ${food.aliases.join(" ")}`);
+    const bTokens = blob.split(" ").filter((token) => token.length > 2);
+    const overlap = qTokens.filter((token) => bTokens.includes(token)).length;
+    return overlap >= Math.min(2, qTokens.length) && overlap >= bTokens.length - 1;
   })
     .slice(0, 4)
     .map((food) => ({

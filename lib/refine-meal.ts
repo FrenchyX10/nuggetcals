@@ -215,11 +215,20 @@ function matchRecord(query: string, chain: string | null, size: PortionSize) {
     if (isGenericSushi && /\b(california|spicy tuna|philadelphia|rainbow|dragon)\b/.test(blob)) {
       continue;
     }
+    const wantsSalad = /\bsalad\b/.test(needle) && !/\b(taco salad|sandwich)\b/.test(needle);
+    const wantsGarden =
+      wantsSalad && /\b(garden|side|house|green)\b/.test(needle);
+    if (wantsSalad && /\bbowl\b/.test(blob) && !/\bsalad\b/.test(blob)) continue;
+    if (wantsGarden && /\b(chicken|steak|cobb|southwest|burrito|caesar)\b/.test(blob)) {
+      continue;
+    }
 
     let score = 0;
     const recordBase = stripSizeWords(record.name);
+    const needleTokens = needle.split(" ").filter((token) => token.length > 2);
     if (recordBase === needle || normalizeName(record.name) === needle) score += 8;
-    else if (blob.includes(needle) || needle.includes(recordBase)) score += 4;
+    else if (blob.includes(needle)) score += 4;
+    else if (recordBase.length > 3 && needleTokens.includes(recordBase)) score += 4;
     const a = needle.split(" ").filter((token) => token.length > 2);
     const b = new Set(blob.split(" ").filter((token) => token.length > 2));
     const hits = a.filter((token) => b.has(token)).length;
