@@ -881,15 +881,14 @@ video {
 
   .page-shell {
     width: calc(100% - 28px);
-    padding: 10px 0 calc(88px + env(safe-area-inset-bottom));
+    padding: max(10px, env(safe-area-inset-top)) 0 calc(88px + env(safe-area-inset-bottom));
   }
 
   .topbar {
-    position: sticky;
-    top: env(safe-area-inset-top);
-    z-index: 20;
+    position: relative;
+    z-index: 5;
     gap: 8px;
-    margin-bottom: 14px;
+    margin-bottom: 12px;
     padding: 6px 8px 6px 6px;
     border-radius: 18px;
   }
@@ -1599,6 +1598,8 @@ video {
     padding: 12px 10px 14px;
     border-radius: 20px;
     gap: 0;
+    justify-items: center;
+    overflow: hidden;
   }
 
   .nug-topstats {
@@ -1608,9 +1609,12 @@ video {
   }
 
   .nug-stage {
-    width: min(92vw, 420px);
-    height: min(92vw, 420px);
-    margin: 0;
+    width: 100%;
+    max-width: 340px;
+    aspect-ratio: 1;
+    height: auto;
+    margin: 0 auto;
+    justify-self: center;
   }
 
   .nug-bob {
