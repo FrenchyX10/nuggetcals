@@ -31,6 +31,7 @@ import {
 } from "@/lib/portion-size";
 import { redeemCode } from "@/lib/nugget";
 import { DayLockStrip } from "@/components/DayLockStrip";
+import { extraIsOn, extrasForMeal, toggleMealExtra } from "@/lib/meal-extras";
 
 const RESTAURANTS = [
   "Chipotle",
@@ -298,6 +299,21 @@ export function BitewiseApp() {
     if (entryId) setHistory(updateHistory(entryId, { servings: value }));
   }
 
+  function changeExtras(next: MealAnalysis) {
+    setMeal(next);
+    if (entryId) {
+      setHistory(
+        updateHistory(entryId, {
+          result: next,
+          totalCalories: next.totalCalories,
+          proteinG: next.proteinG,
+          carbsG: next.carbsG,
+          fatG: next.fatG,
+        }),
+      );
+    }
+  }
+
   function changeSize(next: PortionSize) {
     setSizeHint(next);
     if (!meal) return;
@@ -497,6 +513,10 @@ export function BitewiseApp() {
               )}
             </button>
 
+            <p className="hint photo-tips">
+              Best shot: overhead, close, whole plate, bright light. A US
+              quarter in the frame helps size. Type the restaurant if you know it.
+            </p>
             <div className="photo-actions">
               <button type="button" className="ghost" onClick={() => fileRef.current?.click()}>
                 Choose photo
@@ -752,6 +772,7 @@ export function BitewiseApp() {
               servings={scale}
               onServings={changeServings}
               onSize={changeSize}
+              onMeal={changeExtras}
               alternatives={suggestAlternatives(
                 restaurant,
                 dishHint,
@@ -829,6 +850,7 @@ function Results({
   servings,
   onServings,
   onSize,
+  onMeal,
   alternatives,
   onPick,
 }: {
@@ -836,6 +858,7 @@ function Results({
   servings: number;
   onServings: (value: number) => void;
   onSize: (value: PortionSize) => void;
+  onMeal: (meal: MealAnalysis) => void;
   alternatives: FoodRecord[];
   onPick: (record: FoodRecord) => void;
 }) {
@@ -872,6 +895,13 @@ function Results({
         {kcal(meal.calorieRangeLow * servings)}–
         {kcal(meal.calorieRangeHigh * servings)} kcal
       </p>
+
+      {meal.overallConfidence < 0.62 ? (
+        <p className="nug-warn">
+          This one is a guess. Tap the right dish below and check size — that
+          moves the number more than another photo sometimes.
+        </p>
+      ) : null}
 
       <div className="size-field">
         <p className="field-label">Size</p>
@@ -915,6 +945,25 @@ function Results({
           {servings === 1 ? "the whole plate" : `${servings.toFixed(2).replace(/\.00$/, "")}× this plate`}
         </strong>
       </label>
+
+      {extrasForMeal(meal).length > 0 ? (
+        <div className="alts">
+          <p className="field-label">Also on it? Tap extras the photo might miss</p>
+          <div className="chips">
+            {extrasForMeal(meal).map((extra) => (
+              <button
+                key={extra.id}
+                type="button"
+                className={extraIsOn(meal, extra) ? "chip is-on" : "chip"}
+                onClick={() => onMeal(toggleMealExtra(meal, extra))}
+              >
+                {extra.name}
+                <em> {kcal(extra.calories)}</em>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       {alternatives.length > 0 ? (
         <div className="alts">
