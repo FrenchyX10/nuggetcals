@@ -1377,8 +1377,7 @@ video {
   filter: hue-rotate(290deg) saturate(1.25) brightness(1.08) drop-shadow(0 16px 28px rgba(0, 0, 0, 0.35));
 }
 .color-bacon .nug-body {
-  filter: sepia(0.55) hue-rotate(-18deg) saturate(1.7) brightness(0.92)
-    drop-shadow(0 16px 28px rgba(80, 18, 8, 0.45));
+  filter: drop-shadow(0 16px 28px rgba(80, 18, 8, 0.45));
 }
 .color-spider .nug-body {
   filter: drop-shadow(0 16px 28px rgba(0, 0, 0, 0.35));
