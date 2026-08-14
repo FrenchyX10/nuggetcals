@@ -17,6 +17,7 @@ import {
   stripSizeWords,
   type PortionSize,
 } from "@/lib/portion-size";
+import { looksLikeSushi, parsePieceCount } from "@/lib/sushi";
 
 export function refineMealWithPublishedNutrition(
   meal: MealAnalysis,
@@ -42,6 +43,10 @@ export function refineMealWithPublishedNutrition(
       chain,
       size,
     );
+    const pieces = parsePieceCount(
+      `${item.name} ${item.portionDescription} ${item.notes}`,
+      0,
+    );
     if (!match) {
       return {
         ...item,
@@ -52,9 +57,16 @@ export function refineMealWithPublishedNutrition(
     const variant = pickSizedRecord(match, size, chain);
     const official = Boolean(chain && variant.restaurant === chain);
     const namedSize = recordNamedSize(variant);
+    const sushiPiece =
+      looksLikeSushi(item.name, variant.name) &&
+      (pieces > 0 || /1 piece|per piece|1 slice/i.test(`${variant.name} ${variant.source}`));
     let grams: number;
     let scale: number;
-    if (official && namedSize === size) {
+    if (sushiPiece) {
+      const count = pieces || 1;
+      scale = count;
+      grams = variant.grams * count;
+    } else if (official && namedSize === size) {
       grams = variant.grams;
       scale = 1;
     } else if (official) {
@@ -72,11 +84,13 @@ export function refineMealWithPublishedNutrition(
       name: official ? variant.name : item.name,
       brandOrRestaurantItem: variant.restaurant ?? item.brandOrRestaurantItem,
       portionSize: size,
-      portionDescription: official
-        ? namedSize === size
-          ? `Official ${variant.restaurant} ${SIZE_LABEL[size]} · ${Math.round(grams)}g`
-          : `${SIZE_LABEL[size]} · official ${variant.restaurant} scaled · ${Math.round(grams)}g`
-        : `${SIZE_LABEL[size]} · ${Math.round(grams)}g`,
+      portionDescription: sushiPiece
+        ? `${pieces || 1} pieces · ${variant.name} · ${Math.round(grams)}g`
+        : official
+          ? namedSize === size
+            ? `Official ${variant.restaurant} ${SIZE_LABEL[size]} · ${Math.round(grams)}g`
+            : `${SIZE_LABEL[size]} · official ${variant.restaurant} scaled · ${Math.round(grams)}g`
+          : `${SIZE_LABEL[size]} · ${Math.round(grams)}g`,
       estimatedGrams: Math.round(grams),
       calories: round(variant.calories * scale),
       proteinG: round1(variant.proteinG * scale),
@@ -90,11 +104,13 @@ export function refineMealWithPublishedNutrition(
         : variant.source.startsWith("USDA")
           ? ("usda" as const)
           : ("nutrition_database" as const),
-      notes: official
-        ? namedSize === size
-          ? `Official ${variant.restaurant} ${SIZE_LABEL[size]} calories`
-          : `Official ${variant.restaurant} ${SIZE_LABEL[size]} (${Math.round(SIZE_SCALE[size] * 100)}% of regular)`
-        : `Published ${variant.source} scaled to ${SIZE_LABEL[size]} (${Math.round(grams)}g). ${item.notes}`.trim(),
+      notes: sushiPiece
+        ? `Published ${variant.source}: ${variant.calories} kcal × ${pieces || 1} pieces. ${item.notes}`.trim()
+        : official
+          ? namedSize === size
+            ? `Official ${variant.restaurant} ${SIZE_LABEL[size]} calories`
+            : `Official ${variant.restaurant} ${SIZE_LABEL[size]} (${Math.round(SIZE_SCALE[size] * 100)}% of regular)`
+          : `Published ${variant.source} scaled to ${SIZE_LABEL[size]} (${Math.round(grams)}g). ${item.notes}`.trim(),
     };
   });
 
@@ -183,6 +199,12 @@ function matchRecord(query: string, chain: string | null, size: PortionSize) {
     const isBurger = /\bburger\b/.test(blob) && !isChicken;
     if (wantsChicken && isBurger) continue;
     if (wantsBurger && isChicken) continue;
+    const wantsSushi = /\b(sushi|sashimi|nigiri|maki|roll)\b/.test(needle);
+    const isGenericSushi =
+      wantsSushi && !/\b(nigiri|sashimi|california|spicy tuna|salmon|tuna|eel|shrimp|rainbow|dragon|philadelphia|avocado|cucumber)\b/.test(needle);
+    if (isGenericSushi && /\b(california|spicy tuna|philadelphia|rainbow|dragon)\b/.test(blob)) {
+      continue;
+    }
 
     let score = 0;
     const recordBase = stripSizeWords(record.name);

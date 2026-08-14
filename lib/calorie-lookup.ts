@@ -1,6 +1,13 @@
 import type { FoodItem, MealAnalysis } from "@/lib/schema";
 import { FOODS, findRestaurant, normalizeName } from "@/lib/nutrition-data";
 import { SIZE_LABEL, SIZE_SCALE, type PortionSize } from "@/lib/portion-size";
+import {
+  inferFillings,
+  inferKind,
+  looksLikeSushi,
+  matchSushiPiece,
+  parsePieceCount,
+} from "@/lib/sushi";
 
 export type CalorieHit = {
   name: string;
@@ -188,7 +195,13 @@ async function enrichItem(
 ): Promise<FoodItem> {
   if (item.dataSource === "restaurant_official" && item.calories > 0) return item;
 
-  const query = [restaurant, item.name].filter(Boolean).join(" ");
+  const pieces = parsePieceCount(`${item.name} ${item.portionDescription} ${item.notes}`, 0);
+  const query = [
+    restaurant,
+    pieces > 0 ? `${item.name} ${pieces} pieces calories per piece` : item.name,
+  ]
+    .filter(Boolean)
+    .join(" ");
   const size = (item.portionSize ?? "medium") as PortionSize;
   const [usda, off, local, fatsecret] = await Promise.all([
     searchUsda(query).catch(() => [] as CalorieHit[]),
@@ -218,6 +231,7 @@ async function enrichItem(
       : [];
 
   const hits = dedupe([
+    ...sushiPieceHits(item),
     ...local,
     ...usda,
     ...off,
@@ -234,7 +248,7 @@ async function enrichItem(
       )
     : medianConsensus(hits);
 
-  const scale = SIZE_SCALE[size];
+  const scale = sushiCalorieScale(item, picked, pieces, size);
   const sourceCount = hits.length;
   const spread =
     picked.calories > 0 ? (picked.high - picked.low) / picked.calories : 0.2;
@@ -250,11 +264,16 @@ async function enrichItem(
     sodiumMg: Math.round(picked.sodiumMg * scale),
     estimatedGrams: Math.round((picked.grams || item.estimatedGrams || 150) * scale),
     dataSource: /usda/i.test(picked.source) ? "usda" : "nutrition_database",
-    portionDescription: `${SIZE_LABEL[size]} · ${picked.source}`.slice(0, 80),
-    notes: `${picked.reason} (${Math.round(picked.calories)} kcal serving × ${SIZE_LABEL[size]}). ${picked.url}`.slice(
-      0,
-      280,
-    ),
+    portionDescription: (
+      pieces > 0
+        ? `${pieces} pieces · ${picked.source}`
+        : `${SIZE_LABEL[size]} · ${picked.source}`
+    ).slice(0, 80),
+    notes: (
+      pieces > 0
+        ? `${picked.reason} (${Math.round(picked.calories)} kcal × ${pieces} pieces). ${picked.url}`
+        : `${picked.reason} (${Math.round(picked.calories)} kcal serving × ${SIZE_LABEL[size]}). ${picked.url}`
+    ).slice(0, 280),
     confidence: clamp(0.66 + sourceCount * 0.02 - spread * 0.25, 0.55, 0.93),
   };
 }
@@ -422,7 +441,7 @@ async function concludeEstimate(
           {
             role: "system",
             content:
-              'You conclude one typical 1-serving (medium) calorie estimate from published numbers. Do not invent values that no source supports. Prefer numbers that several sites agree on. Prefer USDA / official menu / FatSecret over blogs. Prefer a plated meal serving, not a 100g lab row or a giant family pack. Reply JSON only: {"calories":0,"proteinG":0,"carbsG":0,"fatG":0,"fiberG":0,"sugarG":0,"sodiumMg":0,"grams":0,"low":0,"high":0,"index":0,"reason":""}',
+              'You conclude one typical 1-serving calorie estimate from published numbers. Do not invent values that no source supports. Prefer numbers that several sites agree on. Prefer USDA / official menu / FatSecret over blogs. Prefer a plated meal serving, not a 100g lab row or a giant family pack. If the food is sushi, pick a 1-piece row (usually 20–90 kcal), not a whole platter. Reply JSON only: {"calories":0,"proteinG":0,"carbsG":0,"fatG":0,"fiberG":0,"sugarG":0,"sodiumMg":0,"grams":0,"low":0,"high":0,"index":0,"reason":""}',
           },
           {
             role: "user",
@@ -523,6 +542,29 @@ function averageMacros(hits: CalorieHit[], calories: number): CalorieHit {
     source: hits[0].source,
     url: hits[0].url,
   };
+}
+
+function sushiPieceHits(item: FoodItem): CalorieHit[] {
+  if (!looksLikeSushi(item.name, item.notes, item.portionDescription)) return [];
+  const blob = `${item.name} ${item.notes} ${item.portionDescription}`;
+  const fillings = inferFillings(blob);
+  const kind = inferKind(blob, fillings);
+  const piece = matchSushiPiece(item.name, fillings, kind);
+  return [
+    {
+      name: `${piece.name} (1 piece)`,
+      calories: piece.calories,
+      proteinG: piece.proteinG,
+      carbsG: piece.carbsG,
+      fatG: piece.fatG,
+      fiberG: piece.fiberG,
+      sugarG: piece.sugarG,
+      sodiumMg: piece.sodiumMg,
+      grams: piece.grams,
+      source: "Sushi per-piece table",
+      url: "https://fdc.nal.usda.gov/",
+    },
+  ];
 }
 
 function searchLocal(query: string): CalorieHit[] {
@@ -772,6 +814,20 @@ function mealQuery(meal: MealAnalysis, restaurant: string) {
   return [restaurant, meal.mealName, ...meal.items.map((item) => item.name)]
     .filter(Boolean)
     .join(" ");
+}
+
+function sushiCalorieScale(
+  item: FoodItem,
+  picked: { name?: string; source?: string; calories: number },
+  pieces: number,
+  size: PortionSize,
+) {
+  if (!looksLikeSushi(item.name, picked.name ?? "", picked.source ?? "", item.notes) || pieces <= 0) {
+    return SIZE_SCALE[size];
+  }
+  if (picked.calories <= 95) return pieces;
+  if (picked.calories >= 180 && picked.calories <= 450) return pieces / 8;
+  return 1;
 }
 
 function namesOverlap(a: string, b: string) {

@@ -61,10 +61,12 @@ const DISH_HINTS = [
   "Sandwich",
   "Wings",
   "Fries",
+  "Sushi",
 ];
 
 const ANALYZE_STEPS = [
   "Identifying the food on the plate…",
+  "Counting pieces and naming fillings…",
   "Using visible ingredients as a scale…",
   "Searching USDA, FatSecret, and other nutrition sites…",
   "Comparing sources and concluding calories…",
@@ -755,7 +757,7 @@ export function BitewiseApp() {
               <h2>Identify the plate. Judge the size. Estimate calories.</h2>
               <ol className="how-list">
                 <li>
-                  <strong>Identify.</strong> Vision AI names every item on the plate. It does not invent calorie numbers.
+                  <strong>Identify.</strong> Vision AI names every item on the plate — for sushi it counts pieces and names fillings (salmon, tuna, avocado, …). It does not invent calorie numbers.
                 </li>
                 <li>
                   <strong>Size.</strong> AI uses visible ingredients as a scale — scoops, piece count, how full the plate is, or a US quarter — then picks small, medium, or large.
