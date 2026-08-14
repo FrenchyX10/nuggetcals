@@ -37,15 +37,15 @@ const POKE_FACE: Record<(typeof POKES)[number], NuggetFace> = {
 };
 
 const NUGGET_SKIN: Record<NuggetColor, string> = {
-  classic: "/nugget.jpg",
-  honey: "/nugget-honey.jpg",
-  golden: "/nugget-golden.jpg",
-  spicy: "/nugget-spicy.jpg",
-  matcha: "/nugget-matcha.jpg",
-  midnight: "/nugget-midnight.jpg",
-  cotton: "/nugget-cotton.jpg",
-  bacon: "/nugget-bacon.jpg",
-  spider: "/nugget-spider.jpg",
+  classic: "/nugget.png",
+  honey: "/nugget-honey.png",
+  golden: "/nugget-golden.png",
+  spicy: "/nugget-spicy.png",
+  matcha: "/nugget-matcha.png",
+  midnight: "/nugget-midnight.png",
+  cotton: "/nugget-cotton.png",
+  bacon: "/nugget-bacon.png",
+  spider: "/nugget-spider.png",
 };
 
 export function NuggetAvatar({
@@ -114,7 +114,7 @@ export function NuggetAvatar({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             className="nug-body"
-            src={NUGGET_SKIN[color] ?? "/nugget.jpg"}
+            src={NUGGET_SKIN[color] ?? "/nugget.png"}
             alt=""
             draggable={false}
           />

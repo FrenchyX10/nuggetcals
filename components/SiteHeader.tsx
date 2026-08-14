@@ -36,7 +36,7 @@ export function SiteHeader({
         <a className="brand" href="/">
           <span className="mark" aria-hidden>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/nugget.jpg" alt="" />
+            <img src="/nugget.png" alt="" />
           </span>
           Nugget<b>Cals</b>
         </a>

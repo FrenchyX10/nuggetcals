@@ -362,7 +362,7 @@ export function BitewiseApp() {
     const entry: HistoryEntry = {
       id,
       createdAt: new Date().toISOString(),
-      thumbnail: thumbnail ?? "/nugget.jpg",
+      thumbnail: thumbnail ?? "/nugget.png",
       mealName: nextMeal.mealName,
       restaurant: nextMeal.restaurant ?? chain,
       totalCalories: nextMeal.totalCalories,
@@ -413,7 +413,7 @@ export function BitewiseApp() {
       const entry: HistoryEntry = {
         id,
         createdAt: new Date().toISOString(),
-        thumbnail: thumbnail ?? "/nugget.jpg",
+        thumbnail: thumbnail ?? "/nugget.png",
         mealName: nextMeal.mealName,
         restaurant: nextMeal.restaurant ?? restaurant.trim() ?? null,
         totalCalories: nextMeal.totalCalories,
@@ -569,7 +569,7 @@ export function BitewiseApp() {
               ) : (
                 <div className="drop-copy">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img className="nugget-float" src="/nugget.jpg" alt="" />
+                  <img className="nugget-float" src="/nugget.png" alt="" />
                   <span className="drop-kicker">Drop a meal photo</span>
                   <strong>Tap to snap or upload</strong>
                   <small>JPG or PNG · add a US quarter next to homemade food for scale</small>

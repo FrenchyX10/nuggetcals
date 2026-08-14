@@ -192,7 +192,7 @@ export function SnacksApp() {
               ) : (
                 <div className="drop-copy">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img className="nugget-float" src="/nugget.jpg" alt="" />
+                  <img className="nugget-float" src="/nugget.png" alt="" />
                   <span className="drop-kicker">Drop a snack photo</span>
                   <strong>Tap to snap the bag</strong>
                   <small>JPG or PNG · photo of the bag or wrapper works best</small>
