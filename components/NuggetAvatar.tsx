@@ -24,10 +24,10 @@ export function NuggetAvatar({
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img className="nug-body" src="/nugget.jpg" alt="Your Nugget" />
         <svg className="nug-fit" viewBox="0 0 100 100" aria-hidden>
-          {!exploded ? <AccessoryMark kind={accessory} /> : null}
           <g className={`nug-face-g face-${shownFace}`} transform="translate(50 51)">
-            <FaceMark face={shownFace} />
+            <FaceMark face={shownFace} hideEyes={accessory === "shades" && !exploded} />
           </g>
+          {!exploded ? <AccessoryMark kind={accessory} /> : null}
         </svg>
       </div>
       {exploded ? <p className="nug-boom-label">BOOM</p> : null}
@@ -35,7 +35,7 @@ export function NuggetAvatar({
   );
 }
 
-function FaceMark({ face }: { face: string }) {
+function FaceMark({ face, hideEyes = false }: { face: string; hideEyes?: boolean }) {
   if (face === "boom") {
     return (
       <>
@@ -48,8 +48,12 @@ function FaceMark({ face }: { face: string }) {
   if (face === "hearts") {
     return (
       <>
-        <path className="nug-heart" d="M-18-8 c0-4 6-6 8-2 c2-4 8-2 8 2 c0 5-8 9-8 9 s-8-4-8-9z" />
-        <path className="nug-heart" d="M2-8 c0-4 6-6 8-2 c2-4 8-2 8 2 c0 5-8 9-8 9 s-8-4-8-9z" />
+        {hideEyes ? null : (
+          <>
+            <path className="nug-heart" d="M-18-8 c0-4 6-6 8-2 c2-4 8-2 8 2 c0 5-8 9-8 9 s-8-4-8-9z" />
+            <path className="nug-heart" d="M2-8 c0-4 6-6 8-2 c2-4 8-2 8 2 c0 5-8 9-8 9 s-8-4-8-9z" />
+          </>
+        )}
         <ellipse className="nug-mouth" cx="0" cy="10" rx="4.5" ry="3" />
       </>
     );
@@ -57,9 +61,13 @@ function FaceMark({ face }: { face: string }) {
   if (face === "cool") {
     return (
       <>
-        <rect x="-22" y="-8" width="18" height="7" rx="2.5" />
-        <rect x="4" y="-8" width="18" height="7" rx="2.5" />
-        <rect x="-5" y="-6" width="10" height="2.4" />
+        {hideEyes ? null : (
+          <>
+            <rect x="-22" y="-8" width="18" height="7" rx="2.5" />
+            <rect x="4" y="-8" width="18" height="7" rx="2.5" />
+            <rect x="-5" y="-6" width="10" height="2.4" />
+          </>
+        )}
         <path d="M-8 9 Q0 15 8 9" fill="none" stroke="#3a2414" strokeWidth="2" />
       </>
     );
@@ -67,8 +75,12 @@ function FaceMark({ face }: { face: string }) {
   if (face === "sleepy") {
     return (
       <>
-        <path d="M-20-4 Q-13-9 -6-4" fill="none" stroke="#3a2414" strokeWidth="2.2" />
-        <path d="M6-4 Q13-9 20-4" fill="none" stroke="#3a2414" strokeWidth="2.2" />
+        {hideEyes ? null : (
+          <>
+            <path d="M-20-4 Q-13-9 -6-4" fill="none" stroke="#3a2414" strokeWidth="2.2" />
+            <path d="M6-4 Q13-9 20-4" fill="none" stroke="#3a2414" strokeWidth="2.2" />
+          </>
+        )}
         <ellipse className="nug-mouth" cx="0" cy="11" rx="3.2" ry="1.8" />
       </>
     );
@@ -76,8 +88,10 @@ function FaceMark({ face }: { face: string }) {
   if (face === "wink") {
     return (
       <>
-        <ellipse className="nug-eye" cx="-12" cy="-4" rx="4.2" ry="5.2" />
-        <path d="M7-4 Q14-9 21-4" fill="none" stroke="#3a2414" strokeWidth="2.2" />
+        {hideEyes ? null : <ellipse className="nug-eye" cx="-12" cy="-4" rx="4.2" ry="5.2" />}
+        {hideEyes ? null : (
+          <path d="M7-4 Q14-9 21-4" fill="none" stroke="#3a2414" strokeWidth="2.2" />
+        )}
         <ellipse className="nug-mouth" cx="1" cy="10" rx="5" ry="3.2" />
       </>
     );
@@ -85,17 +99,25 @@ function FaceMark({ face }: { face: string }) {
   if (face === "sparkle") {
     return (
       <>
-        <ellipse className="nug-eye" cx="-12" cy="-4" rx="4.2" ry="5.2" />
-        <ellipse className="nug-eye" cx="12" cy="-4" rx="4.2" ry="5.2" />
-        <path className="nug-spark" d="M0-16 l1.2 3.4 3.4 1.2-3.4 1.2-1.2 3.4-1.2-3.4-3.4-1.2 3.4-1.2z" />
+        {hideEyes ? null : (
+          <>
+            <ellipse className="nug-eye" cx="-12" cy="-4" rx="4.2" ry="5.2" />
+            <ellipse className="nug-eye" cx="12" cy="-4" rx="4.2" ry="5.2" />
+            <path className="nug-spark" d="M0-16 l1.2 3.4 3.4 1.2-3.4 1.2-1.2 3.4-1.2-3.4-3.4-1.2 3.4-1.2z" />
+          </>
+        )}
         <ellipse className="nug-mouth" cx="0" cy="10" rx="5.4" ry="3.6" />
       </>
     );
   }
   return (
     <>
-      <ellipse className="nug-eye" cx="-12" cy="-4" rx="4.2" ry="5.2" />
-      <ellipse className="nug-eye" cx="12" cy="-4" rx="4.2" ry="5.2" />
+      {hideEyes ? null : (
+        <>
+          <ellipse className="nug-eye" cx="-12" cy="-4" rx="4.2" ry="5.2" />
+          <ellipse className="nug-eye" cx="12" cy="-4" rx="4.2" ry="5.2" />
+        </>
+      )}
       <ellipse className="nug-mouth" cx="0" cy="10" rx="5" ry="3.2" />
     </>
   );
@@ -147,25 +169,25 @@ function AccessoryMark({ kind }: { kind: NuggetAccessory }) {
   }
   if (kind === "shades") {
     return (
-      <g transform="translate(50 49)">
-        <rect x="-22" y="-6" width="18" height="10" rx="3" fill="#1a1208" />
-        <rect x="4" y="-6" width="18" height="10" rx="3" fill="#1a1208" />
-        <rect x="-5" y="-3" width="10" height="2.2" fill="#1a1208" />
-        <rect x="-20" y="-4" width="8" height="3" rx="1" fill="#7dcea0" opacity="0.35" />
-        <rect x="6" y="-4" width="8" height="3" rx="1" fill="#7dcea0" opacity="0.35" />
+      <g transform="translate(50 47)">
+        <rect x="-23" y="-8" width="20" height="12" rx="3.5" fill="#1a1208" />
+        <rect x="3" y="-8" width="20" height="12" rx="3.5" fill="#1a1208" />
+        <rect x="-4" y="-3.2" width="8" height="2.4" fill="#1a1208" />
+        <rect x="-21" y="-5" width="9" height="3.2" rx="1" fill="#7dcea0" opacity="0.28" />
+        <rect x="5" y="-5" width="9" height="3.2" rx="1" fill="#7dcea0" opacity="0.28" />
       </g>
     );
   }
   if (kind === "bandana") {
     return (
-      <g transform="translate(50 38)">
+      <g transform="translate(50 41)">
         <path
-          d="M-20 2 Q0 -8 20 2 L16 8 Q0 1 -16 8 Z"
+          d="M-22 1 Q0 -9 22 1 L18 9 Q0 3 -18 9 Z"
           fill="#c23b2e"
           stroke="#8d261c"
           strokeWidth="0.6"
         />
-        <path d="M16 5 L24 12 L14 10 Z" fill="#c23b2e" />
+        <path d="M17 6 L26 14 L15 11 Z" fill="#c23b2e" />
       </g>
     );
   }
