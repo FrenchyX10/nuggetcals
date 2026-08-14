@@ -1,16 +1,15 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { kcal } from "@/lib/format";
+import { loadHistory, todayTotals } from "@/lib/history";
 import { applyGoalStreak, clawBackNugsIfOver, loadNugget, saveNugget } from "@/lib/nugget";
+import { loadPlan } from "@/lib/plan";
 
-export type SitePage = "meals" | "snacks" | "homemade" | "drinks" | "trends" | "nugget";
+export type SitePage = "log" | "trends" | "nugget";
 
 const LINKS: { id: SitePage; href: string; label: string; short: string }[] = [
-  { id: "meals", href: "/", label: "Meals", short: "Meals" },
-  { id: "snacks", href: "/snacks", label: "Snacks", short: "Snacks" },
-  { id: "homemade", href: "/homemade", label: "Homemade", short: "Home" },
-  { id: "drinks", href: "/drinks", label: "Drinks", short: "Drinks" },
+  { id: "log", href: "/", label: "Log", short: "Log" },
   { id: "trends", href: "/trends", label: "Trends", short: "Trends" },
   { id: "nugget", href: "/nugget", label: "Your Nugget", short: "Nugget" },
 ];
@@ -24,11 +23,28 @@ export function SiteHeader({
   planCalories: number;
   active: SitePage;
 }) {
+  const [today, setToday] = useState(todayCalories);
+  const [plan, setPlan] = useState(planCalories);
+
   useEffect(() => {
-    const clawed = clawBackNugsIfOver(loadNugget(), todayCalories, planCalories);
-    const next = applyGoalStreak(clawed, todayCalories, planCalories);
-    saveNugget(next);
+    setToday(todayCalories);
+    setPlan(planCalories);
   }, [todayCalories, planCalories]);
+
+  useEffect(() => {
+    function sync(nextToday = todayTotals(loadHistory()).calories, nextPlan = loadPlan().calories) {
+      setToday(nextToday);
+      setPlan(nextPlan);
+      const clawed = clawBackNugsIfOver(loadNugget(), nextToday, nextPlan);
+      saveNugget(applyGoalStreak(clawed, nextToday, nextPlan));
+    }
+    sync();
+    function onHistory() {
+      sync();
+    }
+    window.addEventListener("nuggetcals-history", onHistory);
+    return () => window.removeEventListener("nuggetcals-history", onHistory);
+  }, []);
 
   return (
     <>
@@ -51,11 +67,14 @@ export function SiteHeader({
             </a>
           ))}
         </nav>
-        <a className="today-pill" href={active === "meals" ? "/#log" : `${LINKS.find((link) => link.id === active)?.href ?? "/"}#log`}>
+        <a
+          className="today-pill"
+          href={active === "log" ? "/#log" : `${LINKS.find((link) => link.id === active)?.href ?? "/"}#log`}
+        >
           <span>Today</span>
           <strong>
-            {kcal(todayCalories)}
-            <i> / {kcal(planCalories)}</i>
+            {kcal(today)}
+            <i> / {kcal(plan)}</i>
           </strong>
         </a>
       </header>

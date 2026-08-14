@@ -1,19 +1,5 @@
-"use client";
-
-import dynamic from "next/dynamic";
-
-const DrinksApp = dynamic(
-  () => import("@/components/DrinksApp").then((mod) => mod.DrinksApp),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="page-shell">
-        <p className="lede">Loading drinks…</p>
-      </div>
-    ),
-  },
-);
+import { redirect } from "next/navigation";
 
 export default function DrinksPage() {
-  return <DrinksApp />;
+  redirect("/?log=drink");
 }

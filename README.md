@@ -10,7 +10,7 @@ NuggetCals photographs a real meal and estimates calories in three steps: identi
 4. Size comes next: official S/M/L menu rows when they exist, a typical homemade serving scaled to that size, or a US quarter (24.26 mm) as a ruler.
 5. Calories are a consensus from USDA, FatSecret, Open Food Facts, and other published pages for that size. Official chain menu rows stay official. Tap Small / Medium / Large if the guess is wrong.
 
-There is also a **Chips & snacks** page (`/snacks`), a **Homemade** page (`/homemade`), a **Drinks** page (`/drinks`), a **Trends** page (`/trends`), and **Your Nugget** (`/nugget`) — a growing avatar you dress up with Nugs by staying under your daily goal. History stays on the device. Download a JSON backup from Trends to keep it across phones.
+Log is one page with four modes: **Photo**, **Snack**, **Homemade**, and **Drink**. **Trends** and **Your Nugget** stay their own tabs. History stays on the device. Download a JSON backup from Trends to keep it across phones.
 
 Add a free Groq key in the app so vision can actually see the plate. Create one at [console.groq.com/keys](https://console.groq.com/keys) — no credit card.
 

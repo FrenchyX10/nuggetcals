@@ -2,8 +2,8 @@
 
 import dynamic from "next/dynamic";
 
-const BitewiseApp = dynamic(
-  () => import("@/components/BitewiseApp").then((mod) => mod.BitewiseApp),
+const LogApp = dynamic(
+  () => import("@/components/LogApp").then((mod) => mod.LogApp),
   {
     ssr: false,
     loading: () => (
@@ -15,5 +15,5 @@ const BitewiseApp = dynamic(
 );
 
 export default function Home() {
-  return <BitewiseApp />;
+  return <LogApp />;
 }

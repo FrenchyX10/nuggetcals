@@ -42,6 +42,7 @@ export function saveHistory(entries: HistoryEntry[]) {
   } catch {
     localStorage.setItem(KEY, JSON.stringify(next.slice(0, 800)));
   }
+  window.dispatchEvent(new Event("nuggetcals-history"));
 }
 
 export function addHistory(entry: HistoryEntry) {

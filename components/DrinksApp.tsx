@@ -17,7 +17,7 @@ import { historyFromMeal, mealFromTotals, svgThumb } from "@/lib/log-entry";
 
 const THUMB = svgThumb("#7dcea0", "D");
 
-export function DrinksApp() {
+export function DrinksApp({ embedded = false }: { embedded?: boolean } = {}) {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [planCalories, setPlanCalories] = useState(2000);
   const [group, setGroup] = useState<DrinkGroup>("soda");
@@ -97,15 +97,10 @@ export function DrinksApp() {
     window.setTimeout(() => setAddedName(null), 1800);
   }
 
-  return (
-    <div className="page-shell">
-      <SiteHeader
-        todayCalories={today.calories}
-        planCalories={planCalories}
-        active="drinks"
-      />
-
+  const inner = (
+    <>
       <main>
+        {embedded ? null : (
         <section className="hero" id="top">
           <div>
             <p className="eyebrow">Soda. Diet. Everything else.</p>
@@ -133,6 +128,7 @@ export function DrinksApp() {
             </p>
           </aside>
         </section>
+        )}
 
         <section className="workspace snack-workspace">
           <div className="composer">
@@ -268,12 +264,26 @@ export function DrinksApp() {
         ) : null}
       </main>
 
+      {embedded ? null : (
       <footer className="footer">
         <p>NuggetCals · estimates only, not medical advice.</p>
         <p>
           <a href="/">Back to meal photos</a>
         </p>
       </footer>
+      )}
+    </>
+  );
+
+  if (embedded) return inner;
+  return (
+    <div className="page-shell">
+      <SiteHeader
+        todayCalories={today.calories}
+        planCalories={planCalories}
+        active="log"
+      />
+      {inner}
     </div>
   );
 }

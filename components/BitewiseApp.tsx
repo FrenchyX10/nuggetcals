@@ -91,7 +91,7 @@ const RESEARCH_STEPS = [
 
 const GROQ_KEY = "nuggetcals-groq-key";
 
-export function BitewiseApp() {
+export function BitewiseApp({ embedded = false }: { embedded?: boolean } = {}) {
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLElement>(null);
@@ -462,15 +462,10 @@ export function BitewiseApp() {
     }
   }
 
-  return (
-    <div className="page-shell">
-      <SiteHeader
-        todayCalories={today.calories}
-        planCalories={planCalories}
-        active="meals"
-      />
-
+  const inner = (
+    <>
       <main>
+        {embedded ? null : (
         <section className="hero" id="top">
           <div>
             <p className="eyebrow">Identify. Confirm. Calories.</p>
@@ -505,6 +500,7 @@ export function BitewiseApp() {
             </p>
           </aside>
         </section>
+        )}
 
         {!groqKey ? (
           <section className="setup-card">
@@ -680,12 +676,14 @@ export function BitewiseApp() {
             {!imageBase64 ? (
               <p className="hint">Upload a new photo to analyze. Opening a past scan only shows saved results.</p>
             ) : null}
+            {embedded ? null : (
             <p className="hint hide-mobile">
               Also log{" "}
-              <a href="/snacks">snacks</a>,{" "}
-              <a href="/homemade">homemade</a>, or{" "}
-              <a href="/drinks">drinks</a>.
+              <a href="/?log=snack">snacks</a>,{" "}
+              <a href="/?log=homemade">homemade</a>, or{" "}
+              <a href="/?log=drink">drinks</a>.
             </p>
+            )}
             {error ? <p className="error">{error}</p> : null}
 
             <input
@@ -922,10 +920,24 @@ export function BitewiseApp() {
         {codeNote ? <p className="code-strip-note">{codeNote}</p> : null}
       </section>
 
+      {embedded ? null : (
       <footer className="footer">
         <p>NuggetCals · estimates only, not medical advice.</p>
         <p>Restaurant names make chain meals more accurate.</p>
       </footer>
+      )}
+    </>
+  );
+
+  if (embedded) return inner;
+  return (
+    <div className="page-shell">
+      <SiteHeader
+        todayCalories={today.calories}
+        planCalories={planCalories}
+        active="log"
+      />
+      {inner}
     </div>
   );
 }

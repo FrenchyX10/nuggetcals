@@ -17,7 +17,7 @@ import { historyFromSnack } from "@/lib/snack-log";
 
 const GROQ_KEY = "nuggetcals-groq-key";
 
-export function SnacksApp() {
+export function SnacksApp({ embedded = false }: { embedded?: boolean } = {}) {
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
@@ -128,15 +128,10 @@ export function SnacksApp() {
     window.setTimeout(() => setAddedName(null), 1800);
   }
 
-  return (
-    <div className="page-shell">
-      <SiteHeader
-        todayCalories={today.calories}
-        planCalories={planCalories}
-        active="snacks"
-      />
-
+  const inner = (
+    <>
       <main>
+        {embedded ? null : (
         <section className="hero" id="top">
           <div>
             <p className="eyebrow">Chips. Bags. Published labels.</p>
@@ -168,6 +163,7 @@ export function SnacksApp() {
             </p>
           </aside>
         </section>
+        )}
 
         <section className="workspace snack-workspace">
           <div className="composer">
@@ -377,12 +373,26 @@ export function SnacksApp() {
         </p>
       </main>
 
+      {embedded ? null : (
       <footer className="footer">
         <p>NuggetCals · estimates only, not medical advice.</p>
         <p>
           <a href="/">Back to meal photos</a>
         </p>
       </footer>
+      )}
+    </>
+  );
+
+  if (embedded) return inner;
+  return (
+    <div className="page-shell">
+      <SiteHeader
+        todayCalories={today.calories}
+        planCalories={planCalories}
+        active="log"
+      />
+      {inner}
     </div>
   );
 }

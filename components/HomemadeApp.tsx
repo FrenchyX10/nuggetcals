@@ -25,7 +25,7 @@ type Line = {
   label: string;
 };
 
-export function HomemadeApp() {
+export function HomemadeApp({ embedded = false }: { embedded?: boolean } = {}) {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [planCalories, setPlanCalories] = useState(2000);
   const [mode, setMode] = useState<"ingredients" | "calories">("ingredients");
@@ -192,15 +192,10 @@ export function HomemadeApp() {
     window.setTimeout(() => setAdded(false), 2200);
   }
 
-  return (
-    <div className="page-shell">
-      <SiteHeader
-        todayCalories={today.calories}
-        planCalories={planCalories}
-        active="homemade"
-      />
-
+  const inner = (
+    <>
       <main>
+        {embedded ? null : (
         <section className="hero" id="top">
           <div>
             <p className="eyebrow">1 egg. 1 bread. Done.</p>
@@ -228,6 +223,7 @@ export function HomemadeApp() {
             </p>
           </aside>
         </section>
+        )}
 
         <section className="workspace snack-workspace">
           <div className="composer">
@@ -391,12 +387,26 @@ export function HomemadeApp() {
         </section>
       </main>
 
+      {embedded ? null : (
       <footer className="footer">
         <p>NuggetCals · estimates only, not medical advice.</p>
         <p>
           <a href="/">Back to meal photos</a>
         </p>
       </footer>
+      )}
+    </>
+  );
+
+  if (embedded) return inner;
+  return (
+    <div className="page-shell">
+      <SiteHeader
+        todayCalories={today.calories}
+        planCalories={planCalories}
+        active="log"
+      />
+      {inner}
     </div>
   );
 }
