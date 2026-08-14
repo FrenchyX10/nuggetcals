@@ -1310,14 +1310,24 @@ video {
   background: var(--card);
 }
 
-.nug-bank {
+.nug-topstats {
+  display: flex;
+  gap: 8px;
   justify-self: end;
+}
+
+.nug-bank {
   padding: 6px 12px;
   border-radius: 999px;
   background: rgba(240, 180, 90, 0.12);
   border: 1px solid rgba(240, 180, 90, 0.28);
   font-size: 0.82rem;
   color: var(--ink-soft);
+}
+
+.nug-bank.is-broke {
+  border-color: rgba(255, 122, 98, 0.45);
+  background: rgba(255, 122, 98, 0.1);
 }
 
 .nug-bank strong {
@@ -1368,7 +1378,7 @@ video {
   filter: hue-rotate(290deg) saturate(1.25) brightness(1.08) drop-shadow(0 16px 28px rgba(0, 0, 0, 0.35));
 }
 .color-spider .nug-body {
-  filter: sepia(0.35) hue-rotate(-48deg) saturate(3.4) brightness(0.82) drop-shadow(0 16px 28px rgba(0, 0, 0, 0.35));
+  filter: drop-shadow(0 16px 28px rgba(0, 0, 0, 0.35));
 }
 
 .nug-fit {

@@ -22,18 +22,15 @@ export function NuggetAvatar({
         style={{ transform: `scale(${exploded ? 0.2 : scale})` }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img className="nug-body" src="/nugget.jpg" alt="Your Nugget" />
+        <img
+          className="nug-body"
+          src={color === "spider" ? "/nugget-spider.jpg" : "/nugget.jpg"}
+          alt="Your Nugget"
+        />
         <svg className="nug-fit" viewBox="0 0 100 100" aria-hidden>
-          {color === "spider" && !exploded ? <SpiderSuit /> : null}
           <g className={`nug-face-g face-${shownFace}`} transform="translate(50 51)">
-            <FaceMark
-              face={shownFace}
-              hideEyes={
-                (accessory === "shades" || color === "spider") && !exploded
-              }
-            />
+            <FaceMark face={shownFace} hideEyes={accessory === "shades" && !exploded} />
           </g>
-          {color === "spider" && !exploded ? <SpiderEyes /> : null}
           {!exploded ? <AccessoryMark kind={accessory} /> : null}
         </svg>
       </div>
@@ -127,37 +124,6 @@ function FaceMark({ face, hideEyes = false }: { face: string; hideEyes?: boolean
       )}
       <ellipse className="nug-mouth" cx="0" cy="10" rx="5" ry="3.2" />
     </>
-  );
-}
-
-function SpiderSuit() {
-  return (
-    <g className="nug-spider">
-      <ellipse cx="28" cy="62" rx="16" ry="22" fill="#1e3a8a" opacity="0.78" />
-      <ellipse cx="72" cy="62" rx="16" ry="22" fill="#1e3a8a" opacity="0.78" />
-      <g stroke="#120e0b" strokeWidth="0.7" fill="none" opacity="0.72">
-        <path d="M50 24 L50 78" />
-        <path d="M32 32 Q50 38 68 32" />
-        <path d="M28 44 Q50 50 72 44" />
-        <path d="M30 56 Q50 62 70 56" />
-        <path d="M34 68 Q50 72 66 68" />
-        <path d="M38 28 L28 40 L24 56 L32 72" />
-        <path d="M62 28 L72 40 L76 56 L68 72" />
-        <path d="M46 26 L36 36 L30 50" />
-        <path d="M54 26 L64 36 L70 50" />
-      </g>
-    </g>
-  );
-}
-
-function SpiderEyes() {
-  return (
-    <g transform="translate(50 48)">
-      <ellipse cx="-11" cy="0" rx="10" ry="7.5" fill="#f6ecdc" stroke="#120e0b" strokeWidth="1.3" />
-      <ellipse cx="11" cy="0" rx="10" ry="7.5" fill="#f6ecdc" stroke="#120e0b" strokeWidth="1.3" />
-      <ellipse cx="-13" cy="-1.5" rx="3" ry="2" fill="#120e0b" opacity="0.18" />
-      <ellipse cx="9" cy="-1.5" rx="3" ry="2" fill="#120e0b" opacity="0.18" />
-    </g>
   );
 }
 

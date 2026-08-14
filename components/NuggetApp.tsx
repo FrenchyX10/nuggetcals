@@ -8,6 +8,7 @@ import { kcal } from "@/lib/format";
 import { loadPlan } from "@/lib/plan";
 import {
   SHOP,
+  applyGoalStreak,
   buyItem,
   canCollect,
   collectDailyNugs,
@@ -41,7 +42,9 @@ export function NuggetApp() {
     const today = todayTotals(loadHistory());
     setPlanCalories(plan.calories);
     setTodayCalories(today.calories);
-    setSave(loadNugget());
+    const next = applyGoalStreak(loadNugget(), today.calories, plan.calories);
+    saveNugget(next);
+    setSave(next);
   }, []);
 
   function commit(next: NuggetSave, message?: string) {
@@ -131,9 +134,15 @@ export function NuggetApp() {
 
       <main className="nug-page">
         <section className="nug-hero">
-          <div className="nug-bank">
-            <span>Nugs</span>
-            <strong>{nug.nugs}</strong>
+          <div className="nug-topstats">
+            <div className="nug-bank">
+              <span>Nugs</span>
+              <strong>{nug.nugs}</strong>
+            </div>
+            <div className={`nug-bank ${todayCalories > planCalories ? "is-broke" : ""}`}>
+              <span>Streak</span>
+              <strong>{nug.streak}</strong>
+            </div>
           </div>
           <NuggetAvatar
             color={look.color}
@@ -158,13 +167,16 @@ export function NuggetApp() {
             <button type="button" className="analyze nug-collect" onClick={collect}>
               Collect 10 Nugs
             </button>
+          ) : todayCalories > planCalories ? (
+            <p className="nug-warn">Over goal. Streak reset to 0.</p>
           ) : nug.lastAwardDay ? (
             <p className="hint">
-              Streak {nug.streak} day{nug.streak === 1 ? "" : "s"}. Come back tomorrow if you stay under.
+              Streak {nug.streak} day{nug.streak === 1 ? "" : "s"}. Stay at or under {kcal(planCalories)} or it drops to zero.
             </p>
           ) : (
             <p className="hint">
-              Stay under {kcal(planCalories)} today, then collect 10 Nugs. Pop risk starts at +100.
+              Stay at or under {kcal(planCalories)} to grow your streak and collect 10 Nugs.
+              Go over and the streak is gone. Pop at +100.
               {room < 100 && remaining < 0 ? ` ${room} kcal until boom.` : ""}
             </p>
           )}

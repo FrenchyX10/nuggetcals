@@ -1,4 +1,8 @@
+"use client";
+
+import { useEffect } from "react";
 import { kcal } from "@/lib/format";
+import { applyGoalStreak, loadNugget, saveNugget } from "@/lib/nugget";
 
 export type SitePage = "meals" | "snacks" | "homemade" | "drinks" | "trends" | "nugget";
 
@@ -20,6 +24,11 @@ export function SiteHeader({
   planCalories: number;
   active: SitePage;
 }) {
+  useEffect(() => {
+    const next = applyGoalStreak(loadNugget(), todayCalories, planCalories);
+    saveNugget(next);
+  }, [todayCalories, planCalories]);
+
   return (
     <>
       <header className="topbar">

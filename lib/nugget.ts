@@ -29,6 +29,8 @@ export type NuggetSave = {
   unlocked: string[];
   lastAwardDay: string | null;
   streak: number;
+  streakDay: string | null;
+  brokeDay: string | null;
   lastVisitDay: string | null;
   claimedCodes: string[];
 };
@@ -81,6 +83,8 @@ export function defaultNugget(): NuggetSave {
     unlocked: [...FREE],
     lastAwardDay: null,
     streak: 0,
+    streakDay: null,
+    brokeDay: null,
     lastVisitDay: null,
     claimedCodes: [],
   };
@@ -100,6 +104,8 @@ export function loadNugget(): NuggetSave {
       nugs: Number.isFinite(parsed.nugs) ? Math.max(0, Number(parsed.nugs)) : 0,
       streak: Number.isFinite(parsed.streak) ? Math.max(0, Number(parsed.streak)) : 0,
       claimedCodes: Array.isArray(parsed.claimedCodes) ? parsed.claimedCodes : [],
+      streakDay: typeof parsed.streakDay === "string" ? parsed.streakDay : null,
+      brokeDay: typeof parsed.brokeDay === "string" ? parsed.brokeDay : null,
     };
   } catch {
     return defaultNugget();
@@ -176,15 +182,39 @@ export function redeemCode(raw: string): RedeemResult {
   return { ok: true, nugs: prize.nugs, total: next.nugs, message: prize.message };
 }
 
+export function applyGoalStreak(
+  save: NuggetSave,
+  todayCalories: number,
+  planCalories: number,
+): NuggetSave {
+  const day = todayKey();
+  if (todayCalories > planCalories) {
+    if (save.streak === 0 && save.brokeDay === day) return save;
+    return {
+      ...save,
+      streak: 0,
+      brokeDay: day,
+      lastVisitDay: day,
+    };
+  }
+  if (save.brokeDay === day) return save;
+  if (save.streakDay === day) return save;
+  if (todayCalories <= 0) return save;
+  return {
+    ...save,
+    streak: save.streak + 1,
+    streakDay: day,
+    lastVisitDay: day,
+  };
+}
+
 export function collectDailyNugs(save: NuggetSave): NuggetSave {
   const day = todayKey();
   if (save.lastAwardDay === day) return save;
-  const missed = save.lastAwardDay && daysBetween(save.lastAwardDay, day) > 1;
   return {
     ...save,
     nugs: save.nugs + 10,
     lastAwardDay: day,
-    streak: missed ? 1 : save.streak + 1,
     lastVisitDay: day,
   };
 }
@@ -218,8 +248,4 @@ export function previewLook(
   return { color: next.color, face: next.face, accessory: next.accessory };
 }
 
-function daysBetween(a: string, b: string) {
-  const first = new Date(`${a}T00:00:00`);
-  const second = new Date(`${b}T00:00:00`);
-  return Math.round((second.getTime() - first.getTime()) / 86_400_000);
-}
+
