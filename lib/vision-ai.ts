@@ -8,6 +8,7 @@ import {
 } from "@/lib/portion-size";
 import { refineMealWithPublishedNutrition } from "@/lib/refine-meal";
 import { sanitizeIdentifiedName } from "@/lib/identify-guards";
+import { enrichCaloriesFromSources } from "@/lib/calorie-lookup";
 
 const SYSTEM = `You identify food in a photo. Do not invent calorie numbers.
 
@@ -144,7 +145,7 @@ export async function analyzeWithFreeVision(options: {
       identified.sizeReason
         ? `Step 2: Used visible ingredients as a scale and judged ${SIZE_LABEL[mealSize]} — ${identified.sizeReason}`
         : `Step 2: Used visible ingredients as a scale and judged ${SIZE_LABEL[mealSize]}.`,
-      "Step 3: Estimated calories from published nutrition for that size.",
+      "Step 3: Search several nutrition sites and conclude calories for that size.",
       identified.quarterVisible || options.quarterFound
         ? "A US quarter was used as a 24.26 mm ruler next to the ingredients."
         : "No quarter was used.",
@@ -156,7 +157,14 @@ export async function analyzeWithFreeVision(options: {
 
   const refined = refineMealWithPublishedNutrition(skeleton, options.restaurant, hint);
   refined.restaurant = displayRestaurant(options.restaurant) ?? refined.restaurant;
-  return refined;
+  try {
+    return await enrichCaloriesFromSources(refined, {
+      restaurant: options.restaurant,
+      apiKey: options.apiKey,
+    });
+  } catch {
+    return refined;
+  }
 }
 
 async function callGroq(options: {

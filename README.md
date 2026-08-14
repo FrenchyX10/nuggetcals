@@ -1,6 +1,6 @@
 # NuggetCals
 
-NuggetCals photographs a real meal and estimates calories in three steps: identify the plate, look up the size, then estimate calories.
+NuggetCals photographs a real meal and estimates calories in three steps: identify the plate, look up the size, then search multiple nutrition sites and conclude one serving.
 
 ## What it does
 
@@ -8,7 +8,7 @@ NuggetCals photographs a real meal and estimates calories in three steps: identi
 2. Optionally type a restaurant and what the dish is (`chicken`, `bowl`, …).
 3. Vision AI identifies every item, then uses visible ingredients as a scale (scoops, piece count, how full the plate is) to pick small, medium, or large.
 4. Size comes next: official S/M/L menu rows when they exist, a typical homemade serving scaled to that size, or a US quarter (24.26 mm) as a ruler.
-5. Calories are published restaurant / USDA numbers for that size. Tap Small / Medium / Large if the guess is wrong.
+5. Calories are a consensus from USDA, FatSecret, Open Food Facts, and other published pages for that size. Official chain menu rows stay official. Tap Small / Medium / Large if the guess is wrong.
 
 There is also a **Chips & snacks** page (`/snacks`), a **Homemade** page (`/homemade`), a **Drinks** page (`/drinks`), a **Trends** page (`/trends`), and **Your Nugget** (`/nugget`) — a growing avatar you dress up with Nugs by staying under your daily goal. History stays on the device. Download a JSON backup from Trends to keep it across phones.
 

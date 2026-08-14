@@ -66,7 +66,8 @@ const DISH_HINTS = [
 const ANALYZE_STEPS = [
   "Identifying the food on the plate…",
   "Using visible ingredients as a scale…",
-  "Picking small, medium, or large, then calories…",
+  "Searching USDA, FatSecret, and other nutrition sites…",
+  "Comparing sources and concluding calories…",
 ];
 
 const GROQ_KEY = "nuggetcals-groq-key";
@@ -388,8 +389,9 @@ export function BitewiseApp() {
               <em> nuggets, stacks, and plates</em>
             </h1>
             <p className="lede">
-              Drop a real food photo. AI identifies the plate, looks up the
-              serving size, then estimates calories from published nutrition.
+              Drop a real food photo. AI identifies the plate, picks a size,
+              then searches several nutrition sites and concludes one calorie
+              estimate.
             </p>
           </div>
           <aside className="hero-aside hide-mobile">
@@ -407,8 +409,9 @@ export function BitewiseApp() {
             </p>
             <p>
               <strong>Estimate the calories</strong>
-              Published restaurant and USDA numbers are scaled to that size.
-              Add a restaurant name for menu-style accuracy.
+              AI searches USDA, FatSecret, Open Food Facts, and other
+              published pages, then concludes one serving from the numbers
+              that agree. Official chain menu rows stay official.
             </p>
           </aside>
         </section>
@@ -418,8 +421,9 @@ export function BitewiseApp() {
             <p className="card-kicker">One-time setup</p>
             <h2>Add your free Groq key to start identifying plates</h2>
             <p>
-              NuggetCals uses Groq vision to name the food, then looks up size
-              and calories. The key is free and does not need a credit card.
+              NuggetCals uses Groq vision to name the food, then searches
+              several nutrition sites and concludes calories. The key is free
+              and does not need a credit card.
               Create one at{" "}
               <a href="https://console.groq.com/keys" target="_blank" rel="noreferrer">
                 console.groq.com/keys
