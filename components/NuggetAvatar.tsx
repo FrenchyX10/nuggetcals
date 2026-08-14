@@ -1,4 +1,9 @@
+"use client";
+
+import { useState } from "react";
 import type { NuggetAccessory, NuggetColor, NuggetFace } from "@/lib/nugget";
+
+const POKES = ["boing", "wiggle", "hop"] as const;
 
 const NUGGET_SKIN: Record<NuggetColor, string> = {
   classic: "/nugget.jpg",
@@ -26,28 +31,54 @@ export function NuggetAvatar({
   exploded: boolean;
 }) {
   const shownFace = exploded ? "boom" : face;
+  const [poke, setPoke] = useState<(typeof POKES)[number] | null>(null);
+  const [pokeKey, setPokeKey] = useState(0);
+
+  function pokeNugget() {
+    if (exploded) return;
+    const next = POKES[Math.floor(Math.random() * POKES.length)] ?? "boing";
+    setPoke(next);
+    setPokeKey((key) => key + 1);
+  }
 
   return (
-    <div className={`nug-stage ${exploded ? "is-boom" : ""}`}>
+    <button
+      type="button"
+      className={`nug-stage ${exploded ? "is-boom" : ""} ${poke ? `is-${poke}` : ""}`}
+      onClick={pokeNugget}
+      aria-label="Poke your nugget"
+    >
       <div
-        className={`nug-bob color-${color}`}
-        style={{ transform: `scale(${exploded ? 0.2 : scale})` }}
+        key={pokeKey}
+        className={`nug-react ${poke ? `nug-${poke}` : ""}`}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          className="nug-body"
-          src={NUGGET_SKIN[color] ?? "/nugget.jpg"}
-          alt="Your Nugget"
-        />
-        <svg className="nug-fit" viewBox="0 0 100 100" aria-hidden>
-          <g className={`nug-face-g face-${shownFace}`} transform="translate(50 51)">
-            <FaceMark face={shownFace} hideEyes={accessory === "shades" && !exploded} />
-          </g>
-          {!exploded ? <AccessoryMark kind={accessory} /> : null}
-        </svg>
+        <div
+          className={`nug-bob color-${color}`}
+          style={{ transform: `scale(${exploded ? 0.2 : scale})` }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            className="nug-body"
+            src={NUGGET_SKIN[color] ?? "/nugget.jpg"}
+            alt=""
+          />
+          <svg className="nug-fit" viewBox="0 0 100 100" aria-hidden>
+            <g className={`nug-face-g face-${shownFace}`} transform="translate(50 51)">
+              <FaceMark face={shownFace} hideEyes={accessory === "shades" && !exploded} />
+            </g>
+            {!exploded ? <AccessoryMark kind={accessory} /> : null}
+          </svg>
+        </div>
       </div>
+      {poke && !exploded ? (
+        <span key={`fx-${pokeKey}`} className="nug-poke-fx" aria-hidden>
+          <i>♥</i>
+          <i>✦</i>
+          <i>♥</i>
+        </span>
+      ) : null}
       {exploded ? <p className="nug-boom-label">BOOM</p> : null}
-    </div>
+    </button>
   );
 }
 

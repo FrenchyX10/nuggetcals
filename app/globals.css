@@ -1342,6 +1342,64 @@ video {
   display: grid;
   place-items: center;
   margin: 8px 0 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.nug-react {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+}
+
+.nug-boing {
+  animation: nug-boing 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.nug-wiggle {
+  animation: nug-wiggle 0.5s ease-in-out;
+}
+
+.nug-hop {
+  animation: nug-hop 0.58s cubic-bezier(0.22, 1.4, 0.36, 1);
+}
+
+.nug-poke-fx {
+  position: absolute;
+  inset: 18% 12% 28%;
+  pointer-events: none;
+}
+
+.nug-poke-fx i {
+  position: absolute;
+  font-style: normal;
+  font-size: 1.15rem;
+  color: #ff8aa3;
+  animation: nug-heart-float 0.7s ease-out forwards;
+}
+
+.nug-poke-fx i:nth-child(1) {
+  left: 18%;
+  bottom: 20%;
+}
+
+.nug-poke-fx i:nth-child(2) {
+  left: 46%;
+  bottom: 8%;
+  color: #ffd48a;
+  animation-delay: 0.06s;
+}
+
+.nug-poke-fx i:nth-child(3) {
+  right: 16%;
+  bottom: 24%;
+  animation-delay: 0.12s;
 }
 
 .nug-bob {
@@ -1570,6 +1628,76 @@ video {
   border: 1px solid var(--gold);
   color: var(--gold-2);
   white-space: nowrap;
+}
+
+@keyframes nug-boing {
+  0% {
+    transform: scale(1);
+  }
+  28% {
+    transform: scale(1.12, 0.82);
+  }
+  58% {
+    transform: scale(0.92, 1.14);
+  }
+  78% {
+    transform: scale(1.06, 0.96);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes nug-wiggle {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  20% {
+    transform: rotate(-12deg);
+  }
+  40% {
+    transform: rotate(10deg);
+  }
+  60% {
+    transform: rotate(-7deg);
+  }
+  80% {
+    transform: rotate(4deg);
+  }
+}
+
+@keyframes nug-hop {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  22% {
+    transform: translateY(8px) scale(1.08, 0.86);
+  }
+  48% {
+    transform: translateY(-22px) scale(0.94, 1.1);
+  }
+  72% {
+    transform: translateY(4px) scale(1.04, 0.94);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes nug-heart-float {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.4);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-4px) scale(1.15);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-36px) scale(0.8);
+  }
 }
 
 @keyframes nug-float {
