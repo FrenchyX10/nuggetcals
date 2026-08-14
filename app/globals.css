@@ -1367,6 +1367,9 @@ video {
 .color-cotton .nug-body {
   filter: hue-rotate(290deg) saturate(1.25) brightness(1.08) drop-shadow(0 16px 28px rgba(0, 0, 0, 0.35));
 }
+.color-spider .nug-body {
+  filter: sepia(0.35) hue-rotate(-48deg) saturate(3.4) brightness(0.82) drop-shadow(0 16px 28px rgba(0, 0, 0, 0.35));
+}
 
 .nug-fit {
   position: absolute;

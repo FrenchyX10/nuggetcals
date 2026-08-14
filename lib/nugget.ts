@@ -1,4 +1,12 @@
-export type NuggetColor = "classic" | "honey" | "golden" | "spicy" | "matcha" | "midnight" | "cotton";
+export type NuggetColor =
+  | "classic"
+  | "honey"
+  | "golden"
+  | "spicy"
+  | "matcha"
+  | "midnight"
+  | "cotton"
+  | "spider";
 export type NuggetFace = "happy" | "wink" | "hearts" | "cool" | "sleepy" | "sparkle";
 export type NuggetAccessory = "none" | "bow" | "chef" | "shades" | "crown" | "sprout" | "bandana";
 
@@ -10,6 +18,7 @@ export type ShopItem = {
   name: string;
   blurb: string;
   cost: number;
+  secret?: boolean;
 };
 
 export type NuggetSave = {
@@ -34,6 +43,14 @@ export const SHOP: ShopItem[] = [
   { id: "matcha", kind: "color", name: "Matcha", blurb: "Green-tea glow", cost: 40 },
   { id: "midnight", kind: "color", name: "Midnight", blurb: "After-hours nugget", cost: 50 },
   { id: "cotton", kind: "color", name: "Cotton candy", blurb: "Carnival sweet", cost: 60 },
+  {
+    id: "spider",
+    kind: "color",
+    name: "Web-slinger",
+    blurb: "Red, blue, and a secret",
+    cost: 0,
+    secret: true,
+  },
   { id: "happy", kind: "face", name: "Happy", blurb: "Default smile", cost: 0 },
   { id: "wink", kind: "face", name: "Wink", blurb: "Knows the vibe", cost: 20 },
   { id: "hearts", kind: "face", name: "Heart eyes", blurb: "In love with lunch", cost: 30 },
@@ -117,10 +134,18 @@ export function canCollect(save: NuggetSave, todayCalories: number, planCalories
   return todayCalories <= planCalories;
 }
 
-const SECRET_CODES: Record<string, { nugs: number; message: string }> = {
+const SECRET_CODES: Record<
+  string,
+  { nugs: number; unlock?: string[]; message: string }
+> = {
   dylandiner37: {
     nugs: 100,
     message: "DylanDiner37 unlocked. +100 secret Nugs.",
+  },
+  spidertime: {
+    nugs: 0,
+    unlock: ["spider"],
+    message: "Spidertime. Web-slinger color added to your collection.",
   },
 };
 
@@ -143,7 +168,9 @@ export function redeemCode(raw: string): RedeemResult {
   const next: NuggetSave = {
     ...save,
     nugs: save.nugs + prize.nugs,
+    unlocked: [...new Set([...save.unlocked, ...(prize.unlock ?? [])])],
     claimedCodes: [...save.claimedCodes, code],
+    color: prize.unlock?.includes("spider") ? "spider" : save.color,
   };
   saveNugget(next);
   return { ok: true, nugs: prize.nugs, total: next.nugs, message: prize.message };

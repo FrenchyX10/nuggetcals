@@ -60,10 +60,13 @@ export function NuggetApp() {
   const room = 100 - Math.max(0, todayCalories - planCalories);
   const collectible = save ? canCollect(save, todayCalories, planCalories) : false;
 
-  const items = useMemo(
-    () => (tab === "all" ? SHOP : SHOP.filter((item) => item.kind === tab)),
-    [tab],
-  );
+  const items = useMemo(() => {
+    const owned = new Set(save?.unlocked ?? []);
+    return SHOP.filter((item) => {
+      if (item.secret && !owned.has(item.id)) return false;
+      return tab === "all" || item.kind === tab;
+    });
+  }, [tab, save]);
 
   if (!save) {
     return (
