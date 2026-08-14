@@ -7,6 +7,7 @@ export type NuggetColor =
   | "midnight"
   | "cotton"
   | "bacon"
+  | "gummy"
   | "spider";
 export type NuggetFace = "happy" | "wink" | "hearts" | "cool" | "sleepy" | "sparkle";
 export type NuggetAccessory = "none" | "bow" | "chef" | "shades" | "crown" | "sprout" | "bandana";
@@ -42,6 +43,14 @@ const KEY = "nuggetcals-nugget-v1";
 
 export const SHOP: ShopItem[] = [
   { id: "classic", kind: "color", name: "Classic fry", blurb: "The original golden bite", cost: 0 },
+  {
+    id: "gummy",
+    kind: "color",
+    name: "Gummy mix",
+    blurb: "Lime and cherry gelatin swirl",
+    cost: 125,
+    featured: true,
+  },
   {
     id: "bacon",
     kind: "color",
