@@ -806,6 +806,7 @@ function resolvedCount(group: FamilyGroup, variant: FamilyVariant, size: Portion
   if (variant.family === "taco") return size === "small" ? 2 : size === "large" ? 5 : 3;
   if (variant.family === "wings") return size === "small" ? 6 : size === "large" ? 12 : 8;
   if (variant.family === "breakfast" && variant.unit === "piece") {
+    if (group.count > 6 && group.count > 0) return Math.min(group.count, 6);
     return size === "small" ? 2 : size === "large" ? 4 : 3;
   }
   if (variant.family === "chicken" && variant.perUnit) {

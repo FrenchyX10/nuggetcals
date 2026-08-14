@@ -174,7 +174,11 @@ function mapFood101(
 
       let score = row.score;
       if (hint && mapped.includes(hint)) score += 0.2;
-      if (key === "pancakes" && /\bchicken|fried chicken\b/.test(hint)) score -= 0.5;
+      if (key === "pancakes" && /\bchicken|fried chicken|burrito|taco|wrap\b/.test(hint)) {
+        score -= 0.6;
+      }
+      if (key === "pancakes") score -= 0.08;
+      if (key === "breakfast_burrito" || mapped.includes("burrito")) score += 0.06;
       return { label: mapped, score, key };
     })
     .sort((a, b) => b.score - a.score)

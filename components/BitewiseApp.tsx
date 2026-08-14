@@ -208,6 +208,7 @@ export function BitewiseApp() {
               sizeHint,
               groqKey,
               quarterFound: quarter.found,
+              localGuess: (await localSight)?.caption ?? "",
             }),
           }),
           localSight,

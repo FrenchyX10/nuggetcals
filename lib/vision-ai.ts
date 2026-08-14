@@ -38,7 +38,8 @@ Look-clues (required):
 - extras: berries, syrup, butter, bones, bun, lettuce, fries, ginger, wasabi only if visible
 
 Hard disambiguation:
-- Pancakes / waffles / French toast = stacked or gridded cakes, often syrup or berries. NEVER fried chicken.
+- Pancakes / waffles / French toast = stacked or gridded cakes, often syrup or berries. NEVER fried chicken. NEVER a burrito.
+- Burrito = a wrapped cylinder of tortilla, often foil, filling peeking at the ends. NEVER pancakes, even if golden. A foil-wrapped log is a burrito.
 - Fried chicken = irregular breaded pieces, often bone or craggy crust. NEVER pancakes. NEVER a burger unless there is a bun.
 - Burger = bun + patty. No bun = not a burger. Chicken in a bun = chicken sandwich, not a hamburger.
 - Pizza = triangular slice or round pie with toppings, not a quesadilla unless folded.
@@ -76,6 +77,7 @@ export async function analyzeWithFreeVision(options: {
     options.dishHint || options.restaurant,
     options.sizeHint,
   );
+  identified = correctWrapVsCake(identified, options.dishHint);
   const firstBlob = [
     identified.mealName,
     identified.lookClues,
@@ -440,6 +442,7 @@ Quarter detector: ${quarterFound ? "possible quarter in the photo" : "no quarter
 
 If the photo shows a stack of round cakes or syrup/berries, name pancakes or waffles, even if the on-device guess says chicken.
 If you see a bun and a patty, it is a burger or sandwich, not loose fried chicken.
+If you see a wrapped tortilla cylinder, foil, or filling at the ends, it is a burrito — even if the on-device guess says pancakes.
 If this is sushi, do not return one item named sushi. One items[] row per type (salmon nigiri, tuna nigiri, dragon roll, …). For a cut roll, pieces = bite-size slices (usually 6–8), not 1.
 If this is pizza, burger, chicken, pasta, salad, tacos, sandwich, wings, pancakes, Indian, Mexican, Tex-Mex, Texan, Californian, Mediterranean, Asian, or seafood, name the exact dish and count units. Never return only “curry”, “Mexican food”, “BBQ”, or “seafood”.
 
@@ -466,6 +469,28 @@ type IdentifiedMeal = {
   quarterVisible: boolean;
   items: IdentifiedItem[];
 };
+
+function correctWrapVsCake(identified: IdentifiedMeal, hint = ""): IdentifiedMeal {
+  const blob = `${identified.mealName} ${identified.lookClues} ${identified.sizeReason} ${identified.items.map((item) => `${item.name} ${item.notes}`).join(" ")} ${hint}`.toLowerCase();
+  const wrap =
+    /\b(burrito|tortilla|foil|taquito|enchilada|chimichanga)\b/.test(blob) ||
+    /\b(wrapped cylinder|foil wrap|filling at the ends)\b/.test(blob);
+  const cake =
+    /\b(syrup|whipped cream|griddle|stack of (round )?cakes?)\b/.test(blob);
+  if (!wrap || cake) return identified;
+  if (!/\b(pancake|waffle|french toast|hotcake|flapjack)\b/.test(blob)) return identified;
+  const name = /california/.test(blob) ? "California burrito" : "Burrito";
+  return {
+    ...identified,
+    mealName: name,
+    lookClues: `${identified.lookClues} · wrap/tortilla beats pancake guess`,
+    items: identified.items.map((item) =>
+      /\b(pancake|waffle|french toast)\b/.test(`${item.name} ${item.notes}`.toLowerCase())
+        ? { ...item, name, notes: `Corrected from pancake guess. ${item.notes}` }
+        : item,
+    ),
+  };
+}
 
 function parseIdentity(text: string, restaurantInput: string, sizeHint = ""): IdentifiedMeal {
   const value = extractJson(text);

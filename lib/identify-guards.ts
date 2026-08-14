@@ -9,6 +9,8 @@ const CHICKEN =
 const BURGER =
   /\b(burger|hamburger|cheeseburger|whopper)\b/;
 const BERRY = /\b(blueberr|berr|syrup|stack)\b/;
+const WRAP =
+  /\b(burrito|tortilla|foil|wrap|taquito|enchilada|chimichanga|cylindrical|cylinder)\b/;
 
 export function sanitizeIdentifiedName(
   name: string,
@@ -46,6 +48,12 @@ export function sanitizeIdentifiedName(
   if (looksChicken && !userBreakfast && BURGER.test(name) && !userBurger) {
     return "Fried chicken";
   }
+  if (WRAP.test(blob) && BREAKFAST.test(name) && !userBreakfast) {
+    return /california/.test(blob) ? "California burrito" : "Burrito";
+  }
+  if (WRAP.test(hint) && BREAKFAST.test(name)) {
+    return /california/.test(hint) ? "California burrito" : "Burrito";
+  }
   return name;
 }
 
@@ -68,6 +76,9 @@ export function applyLocalIdentityGuard(
   const localScore = sight.labels[0]?.score ?? 0;
 
   if (BREAKFAST.test(hint) || CHICKEN.test(hint) || BURGER.test(hint)) {
+    return meal;
+  }
+  if (WRAP.test(groqText) || WRAP.test(hint)) {
     return meal;
   }
 

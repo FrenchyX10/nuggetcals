@@ -74,10 +74,6 @@ function refineLabels(labels: FoodLabel[], dishHint: string, berries: boolean) {
     .sort((a, b) => b.score - a.score)
     .slice(0, 8);
 
-  if (berries && !cleaned.some((item) => item.label.toLowerCase().includes("pancake"))) {
-    cleaned.unshift({ label: "blueberry pancakes", score: 0.82 });
-  }
-
   return cleaned;
 }
 

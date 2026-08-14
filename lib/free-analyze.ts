@@ -277,6 +277,9 @@ function hintAdjustment(
   const isMed = /\b(gyro|shawarma|falafel|hummus|kebab|souvlaki)\b/.test(blob);
   if (wantsIndian && isIndian) extra += 0.5;
   if (wantsMexican && isMexican) extra += 0.45;
+  if (wantsMexican && isPancake) extra -= 0.85;
+  if (/\bburrito\b/.test(combined) && isPancake) extra -= 0.95;
+  if (wantsPancake && /\bburrito\b/.test(blob)) extra -= 0.95;
   if (wantsMed && isMed) extra += 0.5;
   const wantsTexan = /\b(brisket|chicken fried steak|kolache|texas|bbq|ribs)\b/.test(combined);
   const isTexan = /\b(brisket|chicken fried steak|kolache|ribs|pulled pork)\b/.test(blob);
