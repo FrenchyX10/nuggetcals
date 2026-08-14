@@ -172,11 +172,12 @@ export const FAMILY_VARIANTS: FamilyVariant[] = [
   v("Fish taco", "taco", ["fish taco", "baja fish taco"], 230, 12, 22, 10, 2, 2, 380, 120, "taco", true),
   v("Shrimp taco", "taco", ["shrimp taco"], 190, 12, 18, 8, 2, 1, 360, 100, "taco", true),
 
-  v("Chicken burrito", "burrito", ["chicken burrito"], 700, 38, 76, 26, 8, 4, 1580, 380, "burrito", false),
-  v("Steak burrito", "burrito", ["steak burrito", "beef burrito"], 760, 42, 74, 30, 8, 4, 1680, 400, "burrito", false),
-  v("Bean burrito", "burrito", ["bean and cheese burrito"], 520, 18, 78, 16, 12, 4, 1280, 320, "burrito", false),
-  v("Carnitas burrito", "burrito", ["pork burrito"], 740, 36, 74, 30, 8, 4, 1600, 400, "burrito", false),
-  v("Breakfast burrito", "burrito", ["egg burrito"], 620, 26, 58, 30, 6, 4, 1400, 340, "burrito", false),
+  v("Chicken burrito", "burrito", ["chicken burrito"], 1050, 48, 96, 38, 11, 4, 2100, 480, "burrito", false),
+  v("Steak burrito", "burrito", ["steak burrito"], 1100, 50, 94, 40, 11, 4, 2200, 500, "burrito", false),
+  v("Beef burrito", "burrito", ["beef burrito"], 1100, 50, 94, 40, 11, 4, 2200, 500, "burrito", false),
+  v("Bean burrito", "burrito", ["bean and cheese burrito"], 680, 22, 92, 22, 14, 4, 1600, 400, "burrito", false),
+  v("Carnitas burrito", "burrito", ["pork burrito"], 1100, 46, 94, 44, 11, 4, 2200, 500, "burrito", false),
+  v("Breakfast burrito", "burrito", ["egg burrito"], 780, 32, 72, 36, 8, 4, 1700, 400, "burrito", false),
 
   v("Chicken bowl", "bowl", ["chicken burrito bowl", "chicken rice bowl"], 620, 42, 68, 18, 10, 4, 1400, 450, "bowl", false),
   v("Steak bowl", "bowl", ["steak burrito bowl", "steak rice bowl"], 650, 42, 64, 22, 10, 4, 1400, 470, "bowl", false),

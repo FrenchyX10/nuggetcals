@@ -907,7 +907,7 @@ function unitCalorieScale(
   pieces: number,
   size: PortionSize,
 ) {
-  if (pieces <= 0) return SIZE_SCALE[size];
+  if (pieces <= 0) return mealSizeScale(item.name, size);
   if (shouldMultiplyByCount(item.name, picked.name ?? "", picked.calories, pieces)) {
     return pieces;
   }
@@ -917,6 +917,17 @@ function unitCalorieScale(
     return 1;
   }
   return SIZE_SCALE[size];
+}
+
+function mealSizeScale(name: string, size: PortionSize) {
+  const fullMeal =
+    /\b(burrito|bowl|sandwich|gyro|shawarma|ramen|pho|pasta|pizza|enchilada|fajita)\b/i.test(
+      name,
+    );
+  if (!fullMeal) return SIZE_SCALE[size];
+  if (size === "small") return 0.85;
+  if (size === "large") return 1.12;
+  return 1;
 }
 
 function namesOverlap(a: string, b: string) {

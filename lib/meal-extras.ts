@@ -51,20 +51,44 @@ export function extrasForMeal(meal: MealAnalysis): MealExtra[] {
   if (/\b(california|avocado toast)\b/.test(blob)) tags.add("california");
   if (/\bwings?\b/.test(blob)) tags.add("wings");
 
-  return MEAL_EXTRAS.filter((extra) => extra.tags.some((tag) => tags.has(tag))).slice(0, 8);
+  const extras = MEAL_EXTRAS.filter((extra) => extra.tags.some((tag) => tags.has(tag)));
+  if (/\bburrito\b/.test(blob)) {
+    return extras.filter((extra) => !["fries", "rice", "oil"].includes(extra.id)).slice(0, 8);
+  }
+  return extras.slice(0, 8);
 }
+
+const BUILT_IN_FILLINGS =
+  /\b(burrito|taco|quesadilla|enchilada|bowl|sushi|nigiri|roll|pizza|burger|sandwich)\b/;
 
 export function applySeenToppings(meal: MealAnalysis): MealAnalysis {
   const blob = `${meal.mealName} ${meal.items.map((item) => `${item.name} ${item.notes}`).join(" ")}`.toLowerCase();
+  const wrapped = BUILT_IN_FILLINGS.test(blob);
   let next = meal;
   for (const extra of extrasForMeal(meal)) {
-    const needle = extra.name.toLowerCase();
-    const hit = blob.includes(needle) || blob.includes(needle.split(" ")[0] ?? "");
-    if (hit && needle.length > 4 && !extraIsOn(next, extra)) {
-      next = toggleMealExtra(next, extra);
-    }
+    if (wrapped && isBuiltIntoMain(extra, blob)) continue;
+    if (!mentionsExtra(blob, extra)) continue;
+    if (!extraIsOn(next, extra)) next = toggleMealExtra(next, extra);
   }
   return next;
+}
+
+function isBuiltIntoMain(extra: MealExtra, blob: string) {
+  const id = extra.id;
+  if (/\bburrito|taco|quesadilla|enchilada\b/.test(blob)) {
+    return ["rice", "cheese", "sourcream", "guac", "avocado", "oil", "fries"].includes(id);
+  }
+  if (/\bbowl\b/.test(blob) && !/\b(acai|smoothie)\b/.test(blob)) {
+    return ["rice", "cheese", "guac", "avocado", "oil"].includes(id);
+  }
+  return false;
+}
+
+function mentionsExtra(blob: string, extra: MealExtra) {
+  const name = extra.name.toLowerCase();
+  if (name === "oil or butter" && /\bfoil\b/.test(blob)) return false;
+  const pattern = new RegExp(`\\b${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i");
+  return pattern.test(blob);
 }
 
 export function extraIsOn(meal: MealAnalysis, extra: MealExtra) {

@@ -85,6 +85,11 @@ export function refineMealWithPublishedNutrition(
     } else if (item.estimatedGrams > 20) {
       grams = item.estimatedGrams;
       scale = grams / Math.max(variant.grams, 1);
+    } else if (
+      /\b(burrito|bowl|sandwich|gyro|shawarma|ramen|pho)\b/i.test(item.name)
+    ) {
+      scale = size === "small" ? 0.85 : size === "large" ? 1.12 : 1;
+      grams = variant.grams * scale;
     } else {
       scale = SIZE_SCALE[size];
       grams = variant.grams * scale;
