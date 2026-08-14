@@ -171,6 +171,7 @@ export function NuggetApp() {
             scale={scale}
             exploded={exploded}
           />
+          <p className="nug-tap-hint">tap me</p>
           <p className="nug-mood hide-mobile">{moodLine}</p>
           <p className="nug-kcal">
             {kcal(todayCalories)} / {kcal(planCalories)}

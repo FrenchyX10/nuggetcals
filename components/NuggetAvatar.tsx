@@ -1,9 +1,40 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import type { NuggetAccessory, NuggetColor, NuggetFace } from "@/lib/nugget";
 
 const POKES = ["boing", "wiggle", "hop"] as const;
+
+const POKE_MOTION: Record<(typeof POKES)[number], Keyframe[]> = {
+  boing: [
+    { transform: "scale(1, 1)" },
+    { transform: "scale(1.22, 0.72)", offset: 0.26 },
+    { transform: "scale(0.86, 1.22)", offset: 0.52 },
+    { transform: "scale(1.1, 0.92)", offset: 0.76 },
+    { transform: "scale(1, 1)" },
+  ],
+  wiggle: [
+    { transform: "rotate(0deg)" },
+    { transform: "rotate(-16deg)", offset: 0.18 },
+    { transform: "rotate(14deg)", offset: 0.38 },
+    { transform: "rotate(-10deg)", offset: 0.58 },
+    { transform: "rotate(6deg)", offset: 0.78 },
+    { transform: "rotate(0deg)" },
+  ],
+  hop: [
+    { transform: "translateY(0) scale(1, 1)" },
+    { transform: "translateY(12px) scale(1.16, 0.78)", offset: 0.2 },
+    { transform: "translateY(-42px) scale(0.9, 1.14)", offset: 0.48 },
+    { transform: "translateY(8px) scale(1.08, 0.9)", offset: 0.76 },
+    { transform: "translateY(0) scale(1, 1)" },
+  ],
+};
+
+const POKE_FACE: Record<(typeof POKES)[number], NuggetFace> = {
+  boing: "hearts",
+  wiggle: "wink",
+  hop: "sparkle",
+};
 
 const NUGGET_SKIN: Record<NuggetColor, string> = {
   classic: "/nugget.jpg",
@@ -30,28 +61,52 @@ export function NuggetAvatar({
   scale: number;
   exploded: boolean;
 }) {
-  const shownFace = exploded ? "boom" : face;
+  const reactRef = useRef<HTMLDivElement>(null);
+  const clearPoke = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const lastPoke = useRef(0);
   const [poke, setPoke] = useState<(typeof POKES)[number] | null>(null);
   const [pokeKey, setPokeKey] = useState(0);
+  const shownFace = exploded ? "boom" : poke ? POKE_FACE[poke] : face;
 
-  function pokeNugget() {
-    if (exploded) return;
-    const next = POKES[Math.floor(Math.random() * POKES.length)] ?? "boing";
+  function pokeNugget(event?: PointerEvent<HTMLButtonElement> | KeyboardEvent<HTMLButtonElement>) {
+    if (event && "button" in event && event.button !== 0) return;
+    const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+    if (now - lastPoke.current < 140) return;
+    lastPoke.current = now;
+    event?.stopPropagation();
+    const next = exploded
+      ? "wiggle"
+      : (POKES[Math.floor(Math.random() * POKES.length)] ?? "boing");
+    const node = reactRef.current;
+    if (node) {
+      node.getAnimations().forEach((animation) => animation.cancel());
+      node.animate(POKE_MOTION[next], {
+        duration: next === "hop" ? 640 : 560,
+        easing: next === "wiggle" ? "ease-in-out" : "cubic-bezier(0.34, 1.56, 0.64, 1)",
+        fill: "none",
+      });
+    }
+    if (clearPoke.current) clearTimeout(clearPoke.current);
     setPoke(next);
     setPokeKey((key) => key + 1);
+    clearPoke.current = setTimeout(() => setPoke(null), 700);
   }
 
   return (
     <button
       type="button"
       className={`nug-stage ${exploded ? "is-boom" : ""} ${poke ? `is-${poke}` : ""}`}
-      onClick={pokeNugget}
+      onPointerDown={pokeNugget}
+      onClick={() => pokeNugget()}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          pokeNugget(event);
+        }
+      }}
       aria-label="Poke your nugget"
     >
-      <div
-        key={pokeKey}
-        className={`nug-react ${poke ? `nug-${poke}` : ""}`}
-      >
+      <div ref={reactRef} className={`nug-react ${poke ? `nug-${poke}` : ""}`}>
         <div
           className={`nug-bob color-${color}`}
           style={{ transform: `scale(${exploded ? 0.2 : scale})` }}
@@ -61,6 +116,7 @@ export function NuggetAvatar({
             className="nug-body"
             src={NUGGET_SKIN[color] ?? "/nugget.jpg"}
             alt=""
+            draggable={false}
           />
           <svg className="nug-fit" viewBox="0 0 100 100" aria-hidden>
             <g className={`nug-face-g face-${shownFace}`} transform="translate(50 51)">

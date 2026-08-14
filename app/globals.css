@@ -1348,7 +1348,11 @@ video {
   color: inherit;
   cursor: pointer;
   appearance: none;
+  overflow: visible;
+  user-select: none;
+  -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 .nug-react {
@@ -1356,6 +1360,8 @@ video {
   height: 100%;
   display: grid;
   place-items: center;
+  transform-origin: center bottom;
+  will-change: transform;
 }
 
 .nug-boing {
@@ -1379,9 +1385,9 @@ video {
 .nug-poke-fx i {
   position: absolute;
   font-style: normal;
-  font-size: 1.15rem;
+  font-size: 1.45rem;
   color: #ff8aa3;
-  animation: nug-heart-float 0.7s ease-out forwards;
+  animation: nug-heart-float 0.7s ease-out both;
 }
 
 .nug-poke-fx i:nth-child(1) {
@@ -1413,6 +1419,9 @@ video {
   width: 100%;
   height: auto;
   border-radius: 28%;
+  pointer-events: none;
+  -webkit-user-drag: none;
+  user-select: none;
   filter: drop-shadow(0 16px 28px rgba(0, 0, 0, 0.35));
 }
 
@@ -1470,6 +1479,14 @@ video {
   font-size: 2.4rem;
   color: #ff8a3d;
   animation: nug-boom-text 0.8s ease-out;
+}
+
+.nug-tap-hint {
+  margin: 0 0 2px;
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: lowercase;
+  color: var(--muted);
 }
 
 .nug-mood {
@@ -1763,7 +1780,7 @@ video {
     border-radius: 20px;
     gap: 0;
     justify-items: center;
-    overflow: hidden;
+    overflow: visible;
   }
 
   .nug-topstats {
