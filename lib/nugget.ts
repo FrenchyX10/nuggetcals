@@ -21,6 +21,7 @@ export type NuggetSave = {
   lastAwardDay: string | null;
   streak: number;
   lastVisitDay: string | null;
+  claimedCodes: string[];
 };
 
 const KEY = "nuggetcals-nugget-v1";
@@ -64,6 +65,7 @@ export function defaultNugget(): NuggetSave {
     lastAwardDay: null,
     streak: 0,
     lastVisitDay: null,
+    claimedCodes: [],
   };
 }
 
@@ -80,6 +82,7 @@ export function loadNugget(): NuggetSave {
       unlocked: [...new Set([...(parsed.unlocked ?? []), ...FREE])],
       nugs: Number.isFinite(parsed.nugs) ? Math.max(0, Number(parsed.nugs)) : 0,
       streak: Number.isFinite(parsed.streak) ? Math.max(0, Number(parsed.streak)) : 0,
+      claimedCodes: Array.isArray(parsed.claimedCodes) ? parsed.claimedCodes : [],
     };
   } catch {
     return defaultNugget();
@@ -112,6 +115,30 @@ export function canCollect(save: NuggetSave, todayCalories: number, planCalories
   if (todayCalories <= 0) return false;
   if (todayCalories - planCalories >= 100) return false;
   return todayCalories <= planCalories;
+}
+
+const SECRET_CODES: Record<string, { nugs: number; message: string }> = {
+  dylandiner37: {
+    nugs: 100,
+    message: "DylanDiner37 unlocked. +100 secret Nugs.",
+  },
+};
+
+export function claimSecretRestaurantCode(
+  restaurant: string,
+): { nugs: number; message: string } | null {
+  const code = restaurant.trim().toLowerCase().replace(/\s+/g, "");
+  const prize = SECRET_CODES[code];
+  if (!prize) return null;
+  const save = loadNugget();
+  if (save.claimedCodes.includes(code)) return { nugs: 0, message: "You already claimed that secret." };
+  const next: NuggetSave = {
+    ...save,
+    nugs: save.nugs + prize.nugs,
+    claimedCodes: [...save.claimedCodes, code],
+  };
+  saveNugget(next);
+  return prize;
 }
 
 export function collectDailyNugs(save: NuggetSave): NuggetSave {
