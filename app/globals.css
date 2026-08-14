@@ -1492,6 +1492,7 @@ video {
 .color-cotton .nug-body,
 .color-bacon .nug-body,
 .color-gummy .nug-body,
+.color-hearts7 .nug-body,
 .color-spider .nug-body {
   filter: drop-shadow(0 16px 28px rgba(0, 0, 0, 0.35));
 }

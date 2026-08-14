@@ -46,6 +46,7 @@ const NUGGET_SKIN: Record<NuggetColor, string> = {
   cotton: "/nugget-cotton.png",
   bacon: "/nugget-bacon.png",
   gummy: "/nugget-gummy.png",
+  hearts7: "/nugget-hearts7.png",
   spider: "/nugget-spider.png",
 };
 

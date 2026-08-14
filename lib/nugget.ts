@@ -8,6 +8,7 @@ export type NuggetColor =
   | "cotton"
   | "bacon"
   | "gummy"
+  | "hearts7"
   | "spider";
 export type NuggetFace = "happy" | "wink" | "hearts" | "cool" | "sleepy" | "sparkle";
 export type NuggetAccessory = "none" | "bow" | "chef" | "shades" | "crown" | "sprout" | "bandana";
@@ -65,6 +66,14 @@ export const SHOP: ShopItem[] = [
   { id: "matcha", kind: "color", name: "Matcha", blurb: "Green-tea glow", cost: 40 },
   { id: "midnight", kind: "color", name: "Midnight", blurb: "After-hours nugget", cost: 50 },
   { id: "cotton", kind: "color", name: "Cotton candy", blurb: "Carnival sweet", cost: 60 },
+  {
+    id: "hearts7",
+    kind: "color",
+    name: "7 of Hearts",
+    blurb: "Lucky card. A secret.",
+    cost: 0,
+    secret: true,
+  },
   {
     id: "spider",
     kind: "color",
@@ -222,6 +231,11 @@ const SECRET_CODES: Record<
     unlock: ["spider"],
     message: "Spidertime. Web-slinger color added to your collection.",
   },
+  "7ofart": {
+    nugs: 0,
+    unlock: ["hearts7"],
+    message: "7oFart. 7 of Hearts color added to your collection.",
+  },
 };
 
 export type RedeemResult = {
@@ -245,7 +259,9 @@ export function redeemCode(raw: string): RedeemResult {
     nugs: save.nugs + prize.nugs,
     unlocked: [...new Set([...save.unlocked, ...(prize.unlock ?? [])])],
     claimedCodes: [...save.claimedCodes, code],
-    color: prize.unlock?.includes("spider") ? "spider" : save.color,
+    color: (prize.unlock?.find((id) =>
+      SHOP.some((item) => item.id === id && item.kind === "color"),
+    ) as NuggetColor | undefined) ?? save.color,
   };
   saveNugget(next);
   return { ok: true, nugs: prize.nugs, total: next.nugs, message: prize.message };
