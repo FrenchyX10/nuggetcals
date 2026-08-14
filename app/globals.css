@@ -1463,6 +1463,37 @@ video {
   font-size: 0.82rem;
 }
 
+.nug-trybar {
+  position: sticky;
+  bottom: 8px;
+  z-index: 15;
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 8px;
+  align-items: center;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid rgba(240, 180, 90, 0.35);
+  border-radius: 18px;
+  background: rgba(27, 21, 16, 0.96);
+}
+
+.nug-trybar strong {
+  display: block;
+}
+
+.nug-trybar small {
+  color: var(--muted);
+}
+
+.nug-buy {
+  width: auto;
+  margin: 0;
+  min-width: 88px;
+  min-height: 44px;
+  padding: 10px 16px;
+}
+
 .nug-toast {
   position: fixed;
   left: 50%;
@@ -1538,6 +1569,20 @@ video {
   .nug-stage {
     width: min(260px, 78vw);
     height: min(260px, 78vw);
+  }
+
+  .nug-trybar {
+    position: sticky;
+    bottom: calc(64px + env(safe-area-inset-bottom));
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .nug-trybar > div {
+    grid-column: 1 / -1;
+  }
+
+  .nug-page {
+    padding-bottom: 12px;
   }
 }
 

@@ -177,10 +177,18 @@ export function buyItem(save: NuggetSave, item: ShopItem): NuggetSave | { error:
   );
 }
 
-function equip(save: NuggetSave, item: ShopItem): NuggetSave {
+export function equip(save: NuggetSave, item: ShopItem): NuggetSave {
   if (item.kind === "color") return { ...save, color: item.id as NuggetColor };
   if (item.kind === "face") return { ...save, face: item.id as NuggetFace };
   return { ...save, accessory: item.id as NuggetAccessory };
+}
+
+export function previewLook(
+  save: NuggetSave,
+  item: ShopItem,
+): Pick<NuggetSave, "color" | "face" | "accessory"> {
+  const next = equip(save, item);
+  return { color: next.color, face: next.face, accessory: next.accessory };
 }
 
 function daysBetween(a: string, b: string) {

@@ -14,6 +14,7 @@ import {
   loadNugget,
   nuggetMood,
   nuggetScale,
+  previewLook,
   saveNugget,
   type NuggetSave,
   type ShopItem,
@@ -33,6 +34,7 @@ export function NuggetApp() {
   const [planCalories, setPlanCalories] = useState(2000);
   const [tab, setTab] = useState<ShopKind | "all">("all");
   const [toast, setToast] = useState<string | null>(null);
+  const [trying, setTrying] = useState<ShopItem | null>(null);
 
   useEffect(() => {
     const plan = loadPlan();
@@ -72,25 +74,37 @@ export function NuggetApp() {
   }
 
   const nug = save;
+  const look = trying ? previewLook(nug, trying) : nug;
 
   function collect() {
     if (!collectible) return;
     commit(collectDailyNugs(nug), "+10 Nugs. Your nugget is proud.");
   }
 
-  function shop(item: ShopItem) {
-    const next = buyItem(nug, item);
+  function tryItem(item: ShopItem) {
+    const owned = nug.unlocked.includes(item.id) || item.cost === 0;
+    if (owned) {
+      const next = buyItem(nug, item);
+      if ("error" in next) return;
+      setTrying(null);
+      commit(next, `Wearing ${item.name}`);
+      return;
+    }
+    setTrying(item);
+    setToast(`Trying ${item.name}`);
+    window.setTimeout(() => setToast(null), 1400);
+  }
+
+  function buyTried() {
+    if (!trying) return;
+    const next = buyItem(nug, trying);
     if ("error" in next) {
       setToast(next.error);
       window.setTimeout(() => setToast(null), 1800);
       return;
     }
-    commit(
-      next,
-      nug.unlocked.includes(item.id) || item.cost === 0
-        ? `Wearing ${item.name}`
-        : `Unlocked ${item.name}`,
-    );
+    setTrying(null);
+    commit(next, `Bought ${trying.name}`);
   }
 
   const moodLine =
@@ -119,9 +133,9 @@ export function NuggetApp() {
             <strong>{nug.nugs}</strong>
           </div>
           <NuggetAvatar
-            color={nug.color}
-            face={nug.face}
-            accessory={nug.accessory}
+            color={look.color}
+            face={look.face}
+            accessory={look.accessory}
             scale={scale}
             exploded={exploded}
           />
@@ -170,24 +184,28 @@ export function NuggetApp() {
             {items.map((item) => {
               const owned = nug.unlocked.includes(item.id) || item.cost === 0;
               const wearing =
-                nug.color === item.id ||
-                nug.face === item.id ||
-                nug.accessory === item.id;
+                !trying &&
+                (nug.color === item.id ||
+                  nug.face === item.id ||
+                  nug.accessory === item.id);
+              const previewing = trying?.id === item.id;
               return (
                 <li key={item.id}>
                   <button
                     type="button"
-                    className={`nug-sku ${wearing ? "is-on" : ""}`}
-                    onClick={() => shop(item)}
+                    className={`nug-sku ${wearing || previewing ? "is-on" : ""}`}
+                    onClick={() => tryItem(item)}
                   >
                     <strong>{item.name}</strong>
                     <small>{item.blurb}</small>
                     <em>
                       {wearing
                         ? "Wearing"
-                        : owned
-                          ? "Owned · tap to wear"
-                          : `${item.cost} Nugs`}
+                        : previewing
+                          ? "Trying on"
+                          : owned
+                            ? "Owned · tap to wear"
+                            : `Try · ${item.cost} Nugs`}
                     </em>
                   </button>
                 </li>
@@ -195,6 +213,20 @@ export function NuggetApp() {
             })}
           </ul>
         </section>
+        {trying && !(nug.unlocked.includes(trying.id) || trying.cost === 0) ? (
+          <div className="nug-trybar">
+            <div>
+              <strong>Trying {trying.name}</strong>
+              <small>{trying.cost} Nugs to keep it</small>
+            </div>
+            <button type="button" className="ghost" onClick={() => setTrying(null)}>
+              Reset
+            </button>
+            <button type="button" className="analyze nug-buy" onClick={buyTried}>
+              Buy
+            </button>
+          </div>
+        ) : null}
         {toast ? <p className="nug-toast">{toast}</p> : null}
       </main>
     </div>
