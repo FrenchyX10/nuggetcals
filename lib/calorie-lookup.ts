@@ -8,6 +8,12 @@ import {
   matchSushiPiece,
   parsePieceCount,
 } from "@/lib/sushi";
+import {
+  detectFoodFamily,
+  familyUnitHits,
+  parseFamilyCount,
+  shouldMultiplyByCount,
+} from "@/lib/food-families";
 
 export type CalorieHit = {
   name: string;
@@ -195,10 +201,15 @@ async function enrichItem(
 ): Promise<FoodItem> {
   if (item.dataSource === "restaurant_official" && item.calories > 0) return item;
 
-  const pieces = parsePieceCount(`${item.name} ${item.portionDescription} ${item.notes}`, 0);
+  const pieces =
+    parsePieceCount(`${item.name} ${item.portionDescription} ${item.notes}`, 0) ||
+    parseFamilyCount(`${item.name} ${item.portionDescription} ${item.notes}`, 0);
+  const family = detectFoodFamily(item.name, item.notes, item.portionDescription);
   const query = [
     restaurant,
-    pieces > 0 ? `${item.name} ${pieces} pieces calories per piece` : item.name,
+    pieces > 0
+      ? `${item.name} ${pieces} ${family === "pizza" ? "slices" : family === "taco" ? "tacos" : "pieces"} calories each`
+      : item.name,
   ]
     .filter(Boolean)
     .join(" ");
@@ -232,6 +243,7 @@ async function enrichItem(
 
   const hits = dedupe([
     ...sushiPieceHits(item),
+    ...(family ? familyUnitHits(item.name, `${item.notes} ${item.portionDescription}`, family) : []),
     ...local,
     ...usda,
     ...off,
@@ -248,7 +260,7 @@ async function enrichItem(
       )
     : medianConsensus(hits);
 
-  const scale = sushiCalorieScale(item, picked, pieces, size);
+  const scale = unitCalorieScale(item, picked, pieces, size);
   const sourceCount = hits.length;
   const spread =
     picked.calories > 0 ? (picked.high - picked.low) / picked.calories : 0.2;
@@ -441,7 +453,7 @@ async function concludeEstimate(
           {
             role: "system",
             content:
-              'You conclude one typical 1-serving calorie estimate from published numbers. Do not invent values that no source supports. Prefer numbers that several sites agree on. Prefer USDA / official menu / FatSecret over blogs. Prefer a plated meal serving, not a 100g lab row or a giant family pack. If the food is sushi, pick a 1-piece row (usually 20–90 kcal), not a whole platter. Reply JSON only: {"calories":0,"proteinG":0,"carbsG":0,"fatG":0,"fiberG":0,"sugarG":0,"sodiumMg":0,"grams":0,"low":0,"high":0,"index":0,"reason":""}',
+              'You conclude one typical 1-serving calorie estimate from published numbers. Do not invent values that no source supports. Prefer numbers that several sites agree on. Prefer USDA / official menu / FatSecret over blogs. Prefer a plated meal serving, not a 100g lab row or a giant family pack. If the food is sushi, pizza, tacos, wings, or pancakes, pick a 1-piece / 1-slice row, not a whole platter or pie. Reply JSON only: {"calories":0,"proteinG":0,"carbsG":0,"fatG":0,"fiberG":0,"sugarG":0,"sodiumMg":0,"grams":0,"low":0,"high":0,"index":0,"reason":""}',
           },
           {
             role: "user",
@@ -816,18 +828,22 @@ function mealQuery(meal: MealAnalysis, restaurant: string) {
     .join(" ");
 }
 
-function sushiCalorieScale(
+function unitCalorieScale(
   item: FoodItem,
   picked: { name?: string; source?: string; calories: number },
   pieces: number,
   size: PortionSize,
 ) {
-  if (!looksLikeSushi(item.name, picked.name ?? "", picked.source ?? "", item.notes) || pieces <= 0) {
-    return SIZE_SCALE[size];
+  if (pieces <= 0) return SIZE_SCALE[size];
+  if (shouldMultiplyByCount(item.name, picked.name ?? "", picked.calories, pieces)) {
+    return pieces;
   }
-  if (picked.calories <= 95) return pieces;
-  if (picked.calories >= 180 && picked.calories <= 450) return pieces / 8;
-  return 1;
+  if (looksLikeSushi(item.name, picked.name ?? "", item.notes)) {
+    if (picked.calories <= 95) return pieces;
+    if (picked.calories >= 180 && picked.calories <= 450) return pieces / 8;
+    return 1;
+  }
+  return SIZE_SCALE[size];
 }
 
 function namesOverlap(a: string, b: string) {

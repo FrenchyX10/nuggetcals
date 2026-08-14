@@ -391,17 +391,17 @@ export function BitewiseApp() {
               <em> nuggets, stacks, and plates</em>
             </h1>
             <p className="lede">
-              Drop a real food photo. AI identifies the plate, picks a size,
-              then searches several nutrition sites and concludes one calorie
-              estimate.
+              Drop a real food photo. AI names the specific type — not just
+              “pizza” or “chicken” — counts what it can see, then searches
+              several nutrition sites and concludes one estimate.
             </p>
           </div>
           <aside className="hero-aside hide-mobile">
             <p>
               <strong>Identify the plate</strong>
-              Vision AI names what is actually on the plate — pancakes stay
-              pancakes, chicken stays chicken — and whether it looks small,
-              medium, or large.
+              Vision AI names the specific type on the plate — pepperoni vs
+              cheese, fried vs grilled, Caesar vs cobb — and whether it looks
+              small, medium, or large.
             </p>
             <p>
               <strong>Look up the size</strong>
@@ -757,7 +757,7 @@ export function BitewiseApp() {
               <h2>Identify the plate. Judge the size. Estimate calories.</h2>
               <ol className="how-list">
                 <li>
-                  <strong>Identify.</strong> Vision AI names every item on the plate — for sushi it counts pieces and names fillings (salmon, tuna, avocado, …). It does not invent calorie numbers.
+                  <strong>Identify.</strong> Vision AI names the exact type — pepperoni vs cheese pizza, Caesar vs cobb, fried vs grilled chicken, salmon nigiri vs a roll — and counts slices, tacos, wings, or pieces. It does not invent calorie numbers.
                 </li>
                 <li>
                   <strong>Size.</strong> AI uses visible ingredients as a scale — scoops, piece count, how full the plate is, or a US quarter — then picks small, medium, or large.

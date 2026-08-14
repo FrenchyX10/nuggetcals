@@ -6,7 +6,7 @@ NuggetCals photographs a real meal and estimates calories in three steps: identi
 
 1. You upload a JPG/PNG of food (or take one with your phone camera).
 2. Optionally type a restaurant and what the dish is (`chicken`, `bowl`, …).
-3. Vision AI identifies every item, then uses visible ingredients as a scale (scoops, piece count, how full the plate is) to pick small, medium, or large. Sushi gets a second look: each roll/nigiri type, filling, and piece count.
+3. Vision AI identifies every item, then uses visible ingredients as a scale (scoops, piece count, how full the plate is) to pick small, medium, or large. Common foods get a second look so “pizza” becomes pepperoni vs cheese, “chicken” becomes fried vs grilled, and sushi is split by filling and piece count.
 4. Size comes next: official S/M/L menu rows when they exist, a typical homemade serving scaled to that size, or a US quarter (24.26 mm) as a ruler.
 5. Calories are a consensus from USDA, FatSecret, Open Food Facts, and other published pages for that size. Official chain menu rows stay official. Tap Small / Medium / Large if the guess is wrong.
 

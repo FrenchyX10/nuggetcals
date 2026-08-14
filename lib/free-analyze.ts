@@ -245,6 +245,10 @@ function hintAdjustment(
   const wantsBurger = /\b(burger|hamburger|cheeseburger|whopper|baconator)\b/.test(hint);
   const wantsSushi = /\b(sushi|sashimi|nigiri|maki|california roll)\b/.test(combined);
   const isSushi = /\b(sushi|sashimi|nigiri|maki|roll)\b/.test(blob);
+  const wantsPizza = /\bpizza\b/.test(combined);
+  const isPizza = /\bpizza\b/.test(blob);
+  const wantsPasta = /\b(pasta|spaghetti|alfredo|carbonara)\b/.test(combined);
+  const isPasta = /\b(pasta|spaghetti|alfredo|carbonara|lasagna|ravioli)\b/.test(blob);
   const isChicken = /\b(chicken|nugget|tender|wing|rotisserie)\b/.test(blob);
   const isBurger = /\bburger\b/.test(blob) && !isChicken;
   const isPancake = /\b(pancake|waffle|french toast|hotcake|flapjack)\b/.test(blob);
@@ -263,6 +267,8 @@ function hintAdjustment(
   if (wantsPancake && isBurger) extra -= 0.6;
   if (wantsSushi && isSushi) extra += 0.55;
   if (wantsSushi && isBurger) extra -= 0.5;
+  if (wantsPizza && isPizza) extra += 0.45;
+  if (wantsPasta && isPasta) extra += 0.4;
   return extra;
 }
 

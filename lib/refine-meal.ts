@@ -17,7 +17,8 @@ import {
   stripSizeWords,
   type PortionSize,
 } from "@/lib/portion-size";
-import { looksLikeSushi, parsePieceCount } from "@/lib/sushi";
+import { parsePieceCount } from "@/lib/sushi";
+import { parseFamilyCount, shouldMultiplyByCount } from "@/lib/food-families";
 
 export function refineMealWithPublishedNutrition(
   meal: MealAnalysis,
@@ -43,10 +44,9 @@ export function refineMealWithPublishedNutrition(
       chain,
       size,
     );
-    const pieces = parsePieceCount(
-      `${item.name} ${item.portionDescription} ${item.notes}`,
-      0,
-    );
+    const pieces =
+      parsePieceCount(`${item.name} ${item.portionDescription} ${item.notes}`, 0) ||
+      parseFamilyCount(`${item.name} ${item.portionDescription} ${item.notes}`, 0);
     if (!match) {
       return {
         ...item,
@@ -57,12 +57,15 @@ export function refineMealWithPublishedNutrition(
     const variant = pickSizedRecord(match, size, chain);
     const official = Boolean(chain && variant.restaurant === chain);
     const namedSize = recordNamedSize(variant);
-    const sushiPiece =
-      looksLikeSushi(item.name, variant.name) &&
-      (pieces > 0 || /1 piece|per piece|1 slice/i.test(`${variant.name} ${variant.source}`));
+    const countedUnit = shouldMultiplyByCount(
+      item.name,
+      variant.name,
+      variant.calories,
+      pieces,
+    );
     let grams: number;
     let scale: number;
-    if (sushiPiece) {
+    if (countedUnit) {
       const count = pieces || 1;
       scale = count;
       grams = variant.grams * count;
@@ -84,8 +87,8 @@ export function refineMealWithPublishedNutrition(
       name: official ? variant.name : item.name,
       brandOrRestaurantItem: variant.restaurant ?? item.brandOrRestaurantItem,
       portionSize: size,
-      portionDescription: sushiPiece
-        ? `${pieces || 1} pieces · ${variant.name} · ${Math.round(grams)}g`
+      portionDescription: countedUnit
+        ? `${pieces || 1} counted · ${variant.name} · ${Math.round(grams)}g`
         : official
           ? namedSize === size
             ? `Official ${variant.restaurant} ${SIZE_LABEL[size]} · ${Math.round(grams)}g`
@@ -104,8 +107,8 @@ export function refineMealWithPublishedNutrition(
         : variant.source.startsWith("USDA")
           ? ("usda" as const)
           : ("nutrition_database" as const),
-      notes: sushiPiece
-        ? `Published ${variant.source}: ${variant.calories} kcal × ${pieces || 1} pieces. ${item.notes}`.trim()
+      notes: countedUnit
+        ? `Published ${variant.source}: ${variant.calories} kcal × ${pieces || 1}. ${item.notes}`.trim()
         : official
           ? namedSize === size
             ? `Official ${variant.restaurant} ${SIZE_LABEL[size]} calories`

@@ -18,6 +18,15 @@ import {
   SUSHI_INSPECT_PROMPT,
   type SushiGroup,
 } from "@/lib/sushi";
+import {
+  detectFoodFamily,
+  familyInspectPrompt,
+  foodItemsFromFamilyGroups,
+  groupsFromFamilyIdentity,
+  parseFamilyInspection,
+  type FamilyGroup,
+  type FoodFamily,
+} from "@/lib/food-families";
 
 const SYSTEM = `You identify food in a photo. Do not invent calorie numbers.
 
@@ -34,6 +43,7 @@ Hard disambiguation:
 - Burger = bun + patty. No bun = not a burger. Chicken in a bun = chicken sandwich, not a hamburger.
 - Pizza = triangular slice or round pie with toppings, not a quesadilla unless folded.
 - Sushi is not one food. Split nigiri, sashimi, and each roll type. Count pieces. Name visible fish/fillings (salmon = orange, tuna = deep red, eel = brown glaze, avocado/cucumber = green, crab = white shreds). Never answer only "sushi".
+- Never answer only pizza, burger, chicken, pasta, salad, taco, sandwich, or bowl. Name the type (pepperoni vs cheese, cheeseburger vs bacon double, fried vs grilled, alfredo vs marinara, Caesar vs cobb) and count slices / tacos / wings / pancakes.
 - Do not add fries, drinks, or sides unless they are clearly in the photo.
 
 Size from what you see (small / medium / large):
@@ -65,8 +75,27 @@ export async function analyzeWithFreeVision(options: {
     options.dishHint || options.restaurant,
     options.sizeHint,
   );
-  if (identified.isFood && looksLikeSushi(identified.mealName, identified.lookClues, identified.items.map((item) => `${item.name} ${item.notes}`).join(" "), options.dishHint, options.localGuess ?? "")) {
-    identified = await inspectSushiPlate(identified, options).catch(() => identified);
+  const firstBlob = [
+    identified.mealName,
+    identified.lookClues,
+    identified.items.map((item) => `${item.name} ${item.notes}`).join(" "),
+    options.dishHint,
+    options.localGuess ?? "",
+  ];
+  if (identified.isFood && looksLikeSushi(...firstBlob)) {
+    identified = await inspectCloseupPlate(identified, options, SUSHI_INSPECT_PROMPT, "sushi").catch(
+      () => identified,
+    );
+  } else if (identified.isFood) {
+    const family = detectFoodFamily(...firstBlob);
+    if (family) {
+      identified = await inspectCloseupPlate(
+        identified,
+        options,
+        familyInspectPrompt(family),
+        family,
+      ).catch(() => identified);
+    }
   }
   if (!identified.isFood) {
     return {
@@ -103,7 +132,26 @@ export async function analyzeWithFreeVision(options: {
     sushiGroups.length > 0
       ? foodItemsFromSushiGroups(sushiGroups, identified.size)
       : [];
-  const identifiedItems =
+  const family = detectFoodFamily(
+    identified.mealName,
+    identified.lookClues,
+    identified.items.map((item) => `${item.name} ${item.notes}`).join(" "),
+    options.dishHint,
+  );
+  const familyGroups =
+    sushiRows.length === 0 && family
+      ? groupsFromFamilyIdentity({
+          family,
+          mealName: identified.mealName,
+          lookClues: identified.lookClues,
+          items: identified.items,
+        })
+      : [];
+  const familyRows =
+    familyGroups.length > 0
+      ? foodItemsFromFamilyGroups(familyGroups, identified.size)
+      : [];
+  const detailRows =
     sushiRows.length > 0
       ? sushiRows.map((row) => ({
           name: row.name,
@@ -117,7 +165,27 @@ export async function analyzeWithFreeVision(options: {
           fiberG: row.fiberG,
           sugarG: row.sugarG,
           sodiumMg: row.sodiumMg,
+          count: row.pieces,
+          detail: row.fillings.join(" "),
         }))
+      : familyRows.map((row) => ({
+          name: row.name,
+          notes: row.notes,
+          estimatedGrams: row.estimatedGrams,
+          size: row.size,
+          calories: row.calories,
+          proteinG: row.proteinG,
+          carbsG: row.carbsG,
+          fatG: row.fatG,
+          fiberG: row.fiberG,
+          sugarG: row.sugarG,
+          sodiumMg: row.sodiumMg,
+          count: row.count,
+          detail: `${row.toppings.join(" ")} ${row.unit}`,
+        }));
+  const identifiedItems =
+    detailRows.length > 0
+      ? detailRows
       : identified.items.length > 0
         ? identified.items
         : [
@@ -128,19 +196,19 @@ export async function analyzeWithFreeVision(options: {
               size: identified.size,
             },
           ];
-  const sushiPieceTotal = sushiRows.reduce((sum, row) => sum + row.pieces, 0);
+  const countedUnits = detailRows.reduce((sum, row) => sum + (row.count || 0), 0);
   const hint = [
     options.dishHint,
     ...identifiedItems.map((item) => `${item.size} ${item.name}`),
-    sushiRows.length > 0
-      ? sushiRows.map((row) => `${row.pieces} ${row.name} ${row.fillings.join(" ")}`).join(" ")
+    detailRows.length > 0
+      ? detailRows.map((row) => `${row.count} ${row.name} ${row.detail}`).join(" ")
       : "",
   ]
     .filter(Boolean)
     .join(" ");
   const mealSize =
-    sushiPieceTotal > 0
-      ? sizeFromPieces(sushiPieceTotal)
+    sushiRows.length > 0 && countedUnits > 0
+      ? sizeFromPieces(countedUnits)
       : inferMealSize({
           mealName: identified.mealName,
           items: identifiedItems.map((item) => ({
@@ -149,22 +217,19 @@ export async function analyzeWithFreeVision(options: {
             portionDescription: item.notes,
           })),
         });
+  const detailCalories = detailRows.reduce((sum, row) => sum + row.calories, 0);
   const skeleton = mealAnalysisSchema.parse({
     mealName:
       sushiRows.length > 1
-        ? `Sushi platter (${sushiPieceTotal} pieces)`
+        ? `Sushi platter (${countedUnits} pieces)`
         : identified.mealName,
     restaurant: displayRestaurant(options.restaurant),
     matchedMenuItem: identifiedItems[0]?.name ?? identified.mealName,
     isFood: true,
     notFoodReason: null,
-    totalCalories: sushiRows.reduce((sum, row) => sum + row.calories, 0),
-    calorieRangeLow: Math.round(
-      sushiRows.reduce((sum, row) => sum + row.calories, 0) * 0.85,
-    ),
-    calorieRangeHigh: Math.round(
-      sushiRows.reduce((sum, row) => sum + row.calories, 0) * 1.15,
-    ),
+    totalCalories: detailCalories,
+    calorieRangeLow: Math.round(detailCalories * 0.85),
+    calorieRangeHigh: Math.round(detailCalories * 1.15),
     proteinG: 0,
     carbsG: 0,
     fatG: 0,
@@ -177,8 +242,8 @@ export async function analyzeWithFreeVision(options: {
     items: identifiedItems.map((item) => ({
       name: item.name,
       brandOrRestaurantItem: options.restaurant || null,
-      portionDescription: sushiRows.length > 0
-        ? item.notes || `${SIZE_LABEL[item.size]} · sushi`
+      portionDescription: detailRows.length > 0
+        ? item.notes || `${SIZE_LABEL[item.size]} · identified type`
         : `${SIZE_LABEL[item.size]} · ${item.notes || "identified in photo"}`,
       portionSize: item.size,
       estimatedGrams: item.estimatedGrams || 0,
@@ -190,12 +255,12 @@ export async function analyzeWithFreeVision(options: {
       sugarG: "sugarG" in item ? Number(item.sugarG) || 0 : 0,
       sodiumMg: "sodiumMg" in item ? Number(item.sodiumMg) || 0 : 0,
       confidence: 0.72,
-      dataSource: sushiRows.length > 0 ? "nutrition_database" : "visual_estimate",
+      dataSource: detailRows.length > 0 ? "nutrition_database" : "visual_estimate",
       notes: `${SIZE_LABEL[item.size]} from the photo. ${item.notes}`.trim(),
     })),
     assumptions: [
-      sushiRows.length > 0
-        ? `Step 1: Looked closer at the sushi and split ${sushiPieceTotal || sushiRows.length} pieces by filling.`
+      detailRows.length > 0
+        ? `Step 1: Looked closer and named the type${countedUnits ? ` (${countedUnits} counted)` : ""} — not a generic dish name.`
         : "Step 1: AI identified the food on the plate.",
       identified.sizeReason
         ? `Step 2: Used visible ingredients as a scale and judged ${SIZE_LABEL[mealSize]} — ${identified.sizeReason}`
@@ -205,8 +270,8 @@ export async function analyzeWithFreeVision(options: {
         ? "A US quarter was used as a 24.26 mm ruler next to the ingredients."
         : "No quarter was used.",
     ],
-    precisionNotes: sushiRows.length > 0
-      ? "Sushi calories are per piece × how many of each filling were counted. A mixed platter is not one California roll."
+    precisionNotes: detailRows.length > 0
+      ? "Calories use the specific type (pepperoni vs cheese, Caesar vs cobb, fried vs grilled) and counted slices / pieces / tacos when they are visible."
       : "Identify → size (small / medium / large) → calorie estimate. Chain meals use official size rows when they exist.",
     sources: [],
   });
@@ -375,6 +440,7 @@ Quarter detector: ${quarterFound ? "possible quarter in the photo" : "no quarter
 If the photo shows a stack of round cakes or syrup/berries, name pancakes or waffles, even if the on-device guess says chicken.
 If you see a bun and a patty, it is a burger or sandwich, not loose fried chicken.
 If this is sushi, do not return one item named sushi. One items[] row per type (salmon nigiri, tuna nigiri, California roll, …) with pieces and fillings.
+If this is pizza, burger, chicken, pasta, salad, tacos, sandwich, wings, or pancakes, name the exact type and count units. Never return only “pizza” or “chicken”.
 
 Return only this JSON:
 {"isFood":true,"notFoodReason":null,"mealName":"short specific name","lookClues":"shape, surface, extras","size":"medium","sizeReason":"visible scale clues","quarterVisible":false,"items":[{"name":"specific food name","size":"medium","pieces":0,"fillings":[],"notes":"what you see","estimatedGrams":180}]}`;
@@ -451,7 +517,7 @@ function parseIdentity(text: string, restaurantInput: string, sizeHint = ""): Id
   };
 }
 
-async function inspectSushiPlate(
+async function inspectCloseupPlate(
   first: IdentifiedMeal,
   options: {
     imageBase64: string;
@@ -460,14 +526,21 @@ async function inspectSushiPlate(
     apiKey: string;
     provider: "groq" | "gemini";
   },
+  prompt: string,
+  kind: "sushi" | FoodFamily,
 ): Promise<IdentifiedMeal> {
   const text =
     options.provider === "gemini"
-      ? await inspectSushiGemini(options)
-      : await inspectSushiGroq(options);
-  const parsed = parseSushiInspection(text);
+      ? await inspectCloseupGemini(options, prompt)
+      : await inspectCloseupGroq(options, prompt);
+  if (kind === "sushi") {
+    const parsed = parseSushiInspection(text);
+    if (parsed.groups.length === 0) return first;
+    return mergeSushiIdentity(first, parsed.groups, parsed.totalPieces);
+  }
+  const parsed = parseFamilyInspection(text, kind);
   if (parsed.groups.length === 0) return first;
-  return mergeSushiIdentity(first, parsed.groups, parsed.totalPieces);
+  return mergeFamilyIdentity(first, parsed.groups, parsed.totalCount);
 }
 
 function mergeSushiIdentity(
@@ -506,12 +579,52 @@ function mergeSushiIdentity(
   };
 }
 
-async function inspectSushiGroq(options: {
-  imageBase64: string;
-  restaurant: string;
-  dishHint: string;
-  apiKey: string;
-}) {
+function mergeFamilyIdentity(
+  first: IdentifiedMeal,
+  groups: FamilyGroup[],
+  totalCount: number,
+): IdentifiedMeal {
+  return {
+    ...first,
+    mealName:
+      groups.length === 1
+        ? groups[0].name
+        : groups.map((group) => group.name).slice(0, 3).join(" + "),
+    lookClues: [
+      first.lookClues,
+      groups
+        .map(
+          (group) =>
+            `${group.count || "?"} ${group.unit} ${group.name} (${group.toppings.join("/") || "type from photo"})`,
+        )
+        .join("; "),
+    ]
+      .filter(Boolean)
+      .join(" · "),
+    sizeReason:
+      totalCount > 0
+        ? `Named the specific type and counted ${totalCount} units.`
+        : first.sizeReason,
+    items: groups.map((group) => ({
+      name: group.name,
+      notes: group.notes,
+      estimatedGrams: 0,
+      size: first.size,
+      pieces: group.count || undefined,
+      fillings: [...group.toppings, ...group.extras],
+    })),
+  };
+}
+
+async function inspectCloseupGroq(
+  options: {
+    imageBase64: string;
+    restaurant: string;
+    dishHint: string;
+    apiKey: string;
+  },
+  prompt: string,
+) {
   const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -524,13 +637,13 @@ async function inspectSushiGroq(options: {
       max_completion_tokens: 2000,
       reasoning_effort: "none",
       messages: [
-        { role: "system", content: SUSHI_INSPECT_PROMPT },
+        { role: "system", content: prompt },
         {
           role: "user",
           content: [
             {
               type: "text",
-              text: `Look again. Restaurant: ${options.restaurant || "(none)"}. Hint: ${options.dishHint || "(none)"}. Count every piece and name fillings.`,
+              text: `Look again. Restaurant: ${options.restaurant || "(none)"}. Hint: ${options.dishHint || "(none)"}. Name the exact type, toppings, and count.`,
             },
             {
               type: "image_url",
@@ -550,29 +663,32 @@ async function inspectSushiGroq(options: {
   };
   if (data.error?.failed_generation) return data.error.failed_generation;
   const text = data.choices?.[0]?.message?.content;
-  if (!text) throw new Error(data.error?.message || "Sushi close-up failed.");
+  if (!text) throw new Error(data.error?.message || "Close-up look failed.");
   return text;
 }
 
-async function inspectSushiGemini(options: {
-  imageBase64: string;
-  restaurant: string;
-  dishHint: string;
-  apiKey: string;
-}) {
+async function inspectCloseupGemini(
+  options: {
+    imageBase64: string;
+    restaurant: string;
+    dishHint: string;
+    apiKey: string;
+  },
+  prompt: string,
+) {
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(options.apiKey)}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        systemInstruction: { parts: [{ text: SUSHI_INSPECT_PROMPT }] },
+        systemInstruction: { parts: [{ text: prompt }] },
         contents: [
           {
             role: "user",
             parts: [
               {
-                text: `Look again. Restaurant: ${options.restaurant || "(none)"}. Hint: ${options.dishHint || "(none)"}. Count every piece and name fillings.`,
+                text: `Look again. Restaurant: ${options.restaurant || "(none)"}. Hint: ${options.dishHint || "(none)"}. Name the exact type, toppings, and count.`,
               },
               {
                 inlineData: { mimeType: "image/jpeg", data: options.imageBase64 },
@@ -589,7 +705,7 @@ async function inspectSushiGemini(options: {
     candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
   };
   const text = data.candidates?.[0]?.content?.parts?.map((part) => part.text ?? "").join("");
-  if (!text) throw new Error(data.error?.message || "Sushi close-up failed.");
+  if (!text) throw new Error(data.error?.message || "Close-up look failed.");
   return text;
 }
 
