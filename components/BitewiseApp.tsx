@@ -29,6 +29,7 @@ import {
   SIZE_LABEL,
   type PortionSize,
 } from "@/lib/portion-size";
+import { redeemCode } from "@/lib/nugget";
 
 const RESTAURANTS = [
   "Chipotle",
@@ -94,6 +95,8 @@ export function BitewiseApp() {
   const [keyDraft, setKeyDraft] = useState("");
   const [savingKey, setSavingKey] = useState(false);
   const [sizeHint, setSizeHint] = useState<PortionSize | "">("");
+  const [code, setCode] = useState("");
+  const [codeNote, setCodeNote] = useState<string | null>(null);
 
   useEffect(() => {
     setHistory(loadHistory());
@@ -761,6 +764,41 @@ export function BitewiseApp() {
           )}
         </section>
       </main>
+
+      <section className="code-strip" aria-label="Redeem a code">
+        <input
+          value={code}
+          onChange={(event) => {
+            setCode(event.target.value);
+            setCodeNote(null);
+          }}
+          onKeyDown={(event) => {
+            if (event.key !== "Enter") return;
+            const result = redeemCode(code);
+            setCodeNote(result.message);
+            if (result.ok) setCode("");
+          }}
+          placeholder="Code"
+          maxLength={40}
+          autoCapitalize="off"
+          autoCorrect="off"
+          spellCheck={false}
+          aria-label="Nugget code"
+        />
+        <button
+          type="button"
+          className="ghost"
+          disabled={code.trim().length < 2}
+          onClick={() => {
+            const result = redeemCode(code);
+            setCodeNote(result.message);
+            if (result.ok) setCode("");
+          }}
+        >
+          Redeem
+        </button>
+        {codeNote ? <p className="code-strip-note">{codeNote}</p> : null}
+      </section>
 
       <footer className="footer">
         <p>NuggetCals · estimates only, not medical advice.</p>
