@@ -69,6 +69,7 @@ const DISH_HINTS = [
   "Brisket",
   "Tex-Mex",
   "Avocado toast",
+  "Acai",
 ];
 
 const ANALYZE_STEPS = [

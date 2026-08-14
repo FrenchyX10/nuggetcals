@@ -186,4 +186,6 @@ const RULES: Array<{ test: RegExp; low: number; high: number }> = [
   { test: /\bgyro\b/, low: 450, high: 850 },
   { test: /\bhamburger\b/, low: 250, high: 650 },
   { test: /\bcheeseburger\b/, low: 300, high: 800 },
+  { test: /\bacai|açaí\b/, low: 280, high: 650 },
+  { test: /\bsmoothie bowl\b/, low: 250, high: 550 },
 ];

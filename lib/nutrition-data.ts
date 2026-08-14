@@ -152,7 +152,9 @@ export const FOODS: FoodRecord[] = [
   f("Pulled pork plate", null, ["pulled pork"], 580, 40, 20, 34, 1, 14, 1200, 300, "BBQ plate"),
   f("Kolache", null, ["kolache"], 280, 10, 32, 12, 1, 6, 520, 90, "1 pastry"),
   f("California burrito", null, ["california burrito", "cali burrito"], 880, 42, 82, 38, 8, 6, 1680, 480, "Fries inside"),
-  f("Acai bowl", null, ["acai bowl", "açaí"], 420, 8, 72, 12, 10, 42, 120, 380, "Fruit bowl"),
+  f("Acai bowl", null, ["acai bowl", "açaí bowl", "acai"], 450, 8, 74, 14, 11, 38, 140, 400, "Purple acai, banana, granola"),
+  f("Acai bowl, peanut butter", null, ["peanut butter acai"], 540, 14, 70, 22, 12, 36, 180, 420, "Acai + peanut butter"),
+  f("Berry smoothie bowl", null, ["smoothie bowl", "berry bowl"], 380, 8, 68, 10, 8, 42, 90, 380, "Blended berry bowl"),
   f("Cioppino", null, ["cioppino"], 380, 36, 18, 14, 3, 6, 980, 420, "SF seafood stew"),
   f("Turkey avocado sandwich", null, ["turkey avocado"], 480, 32, 40, 20, 6, 6, 1100, 240, "Deli sandwich"),
   f("Bibimbap", null, ["bibimbap"], 580, 24, 78, 18, 6, 10, 980, 500, "Stone bowl"),
@@ -160,7 +162,7 @@ export const FOODS: FoodRecord[] = [
   f("Avocado toast", null, ["avocado toast"], 350, 8, 32, 22, 8, 2, 420, 160, "1 large slice"),
   f("Greek yogurt bowl", null, ["yogurt", "yogurt bowl"], 280, 18, 36, 6, 3, 28, 90, 250, "With fruit and granola"),
   f("Smoothie", null, ["smoothie"], 290, 6, 58, 4, 4, 46, 80, 400, "16 oz fruit"),
-  f("Burrito bowl, steak", null, ["bowl", "steak bowl"], 650, 42, 64, 22, 10, 4, 1400, 470, "Typical bowl"),
+  f("Burrito bowl, steak", null, ["steak burrito bowl"], 650, 42, 64, 22, 10, 4, 1400, 470, "Typical bowl"),
   f("Sandwich, turkey", null, ["turkey sandwich"], 420, 28, 40, 14, 3, 6, 1100, 220, "Deli sandwich"),
   f("BLT sandwich", null, ["blt"], 430, 16, 34, 24, 2, 6, 980, 180, "Classic BLT"),
   f("Soup, tomato", null, ["tomato soup", "soup"], 180, 4, 28, 6, 3, 14, 780, 300, "Bowl"),
@@ -196,14 +198,14 @@ export const FOODS: FoodRecord[] = [
   f("Chicken Burrito", "Chipotle", ["burrito", "chicken burrito"], 1070, 55, 98, 39.5, 13, 3, 2370, 500, "Chipotle nutrition calculator", "https://www.chipotle.com/nutrition-calculator"),
   f("Steak Burrito", "Chipotle", ["burrito"], 1060, 52, 97, 40, 13, 3, 2320, 500, "Chipotle nutrition calculator", "https://www.chipotle.com/nutrition-calculator"),
   f("Carnitas Burrito", "Chipotle", ["burrito"], 1110, 48, 97, 48, 13, 3, 2310, 500, "Chipotle nutrition calculator", "https://www.chipotle.com/nutrition-calculator"),
-  f("Chicken Bowl", "Chipotle", ["bowl", "burrito bowl", "chicken bowl"], 760, 52, 71, 27, 12, 3, 1940, 520, "Chipotle nutrition calculator", "https://www.chipotle.com/nutrition-calculator"),
-  f("Steak Bowl", "Chipotle", ["bowl", "steak bowl"], 750, 49, 70, 27.5, 12, 3, 1890, 520, "Chipotle nutrition calculator", "https://www.chipotle.com/nutrition-calculator"),
-  f("Veggie Bowl", "Chipotle", ["bowl", "veggie bowl"], 560, 19, 80, 18, 16, 6, 1450, 520, "Chipotle nutrition calculator", "https://www.chipotle.com/nutrition-calculator"),
+  f("Chicken Bowl", "Chipotle", ["chicken burrito bowl", "chipotle chicken bowl"], 760, 52, 71, 27, 12, 3, 1940, 520, "Chipotle nutrition calculator", "https://www.chipotle.com/nutrition-calculator"),
+  f("Steak Bowl", "Chipotle", ["chipotle steak bowl"], 750, 49, 70, 27.5, 12, 3, 1890, 520, "Chipotle nutrition calculator", "https://www.chipotle.com/nutrition-calculator"),
+  f("Veggie Bowl", "Chipotle", ["chipotle veggie bowl"], 560, 19, 80, 18, 16, 6, 1450, 520, "Chipotle nutrition calculator", "https://www.chipotle.com/nutrition-calculator"),
   f("Chicken Salad", "Chipotle", ["salad"], 500, 43, 21, 27, 8, 5, 1460, 400, "Chipotle nutrition calculator", "https://www.chipotle.com/nutrition-calculator"),
   f("Chips and Guacamole", "Chipotle", ["chips", "guacamole", "chips and guac"], 770, 10, 77, 48, 14, 2, 680, 230, "Chipotle nutrition calculator", "https://www.chipotle.com/nutrition-calculator"),
   f("Chips and Queso", "Chipotle", ["chips", "queso"], 890, 18, 87, 51, 10, 3, 1290, 250, "Chipotle nutrition calculator", "https://www.chipotle.com/nutrition-calculator"),
   f("Chicken Tacos (3)", "Chipotle", ["taco", "tacos"], 780, 48, 63, 32, 9, 3, 1680, 320, "Chipotle nutrition calculator", "https://www.chipotle.com/nutrition-calculator"),
-  f("Sofritas Bowl", "Chipotle", ["bowl", "sofritas"], 700, 27, 82, 28, 16, 5, 1750, 520, "Chipotle nutrition calculator", "https://www.chipotle.com/nutrition-calculator"),
+  f("Sofritas Bowl", "Chipotle", ["sofritas bowl"], 700, 27, 82, 28, 16, 5, 1750, 520, "Chipotle nutrition calculator", "https://www.chipotle.com/nutrition-calculator"),
 
   // Chick-fil-A
   f("Chicken Sandwich", "Chick-fil-A", ["chicken sandwich", "sandwich"], 440, 28, 41, 18, 2, 6, 1460, 193, "Chick-fil-A nutrition", "https://www.chick-fil-a.com/nutrition-allergens"),
@@ -286,11 +288,11 @@ export const FOODS: FoodRecord[] = [
   f("Zuppa Toscana, bowl", "Olive Garden", ["soup", "zuppa toscana"], 220, 7, 15, 15, 2, 2, 790, 300, "Olive Garden nutrition", "https://www.olivegarden.com/nutrition"),
 
   // Sweetgreen
-  f("Harvest Bowl", "Sweetgreen", ["bowl", "harvest bowl", "salad"], 705, 37, 56, 37, 9, 16, 1130, 430, "Sweetgreen nutrition", "https://www.sweetgreen.com"),
+  f("Harvest Bowl", "Sweetgreen", ["harvest bowl"], 705, 37, 56, 37, 9, 16, 1130, 430, "Sweetgreen nutrition", "https://www.sweetgreen.com"),
   f("Kale Caesar", "Sweetgreen", ["salad", "caesar"], 530, 35, 25, 34, 6, 4, 980, 360, "Sweetgreen nutrition", "https://www.sweetgreen.com"),
   f("Guacamole Greens", "Sweetgreen", ["salad", "guacamole greens"], 540, 32, 32, 32, 12, 6, 890, 380, "Sweetgreen nutrition", "https://www.sweetgreen.com"),
-  f("Hot Honey Chicken Bowl", "Sweetgreen", ["bowl", "chicken bowl"], 650, 38, 62, 26, 8, 18, 1200, 420, "Sweetgreen nutrition", "https://www.sweetgreen.com"),
-  f("Buffalo Chicken Bowl", "Sweetgreen", ["bowl"], 620, 40, 48, 28, 7, 8, 1400, 410, "Sweetgreen nutrition", "https://www.sweetgreen.com"),
+  f("Hot Honey Chicken Bowl", "Sweetgreen", ["hot honey chicken bowl"], 650, 38, 62, 26, 8, 18, 1200, 420, "Sweetgreen nutrition", "https://www.sweetgreen.com"),
+  f("Buffalo Chicken Bowl", "Sweetgreen", ["buffalo chicken bowl"], 620, 40, 48, 28, 7, 8, 1400, 410, "Sweetgreen nutrition", "https://www.sweetgreen.com"),
 
   // Subway
   f("Turkey Breast, 6-inch", "Subway", ["turkey sandwich", "sub"], 280, 18, 46, 3.5, 5, 7, 760, 219, "Subway nutrition", "https://www.subway.com/en-us/menunutrition/nutrition"),
@@ -333,7 +335,7 @@ export const FOODS: FoodRecord[] = [
   // KFC
   f("Original Recipe Chicken Breast", "KFC", ["fried chicken", "chicken"], 390, 39, 11, 21, 1, 0, 1190, 162, "KFC nutrition", "https://www.kfc.com/nutrition"),
   f("3-Piece Chicken Combo", "KFC", ["fried chicken", "combo"], 830, 52, 62, 42, 4, 4, 2100, 420, "KFC nutrition", "https://www.kfc.com/nutrition"),
-  f("Famous Bowl", "KFC", ["famous bowl", "bowl"], 720, 26, 79, 32, 5, 3, 2130, 400, "KFC nutrition", "https://www.kfc.com/nutrition"),
+  f("Famous Bowl", "KFC", ["famous bowl", "kfc bowl"], 720, 26, 79, 32, 5, 3, 2130, 400, "KFC nutrition", "https://www.kfc.com/nutrition"),
   f("Chicken Pot Pie", "KFC", ["pot pie"], 720, 29, 57, 42, 4, 5, 1970, 360, "KFC nutrition", "https://www.kfc.com/nutrition"),
   f("Mashed Potatoes with Gravy", "KFC", ["mashed potatoes"], 130, 2, 19, 5, 1, 0, 530, 136, "KFC nutrition", "https://www.kfc.com/nutrition"),
   f("Coleslaw", "KFC", ["coleslaw", "slaw"], 170, 1, 22, 9, 3, 17, 180, 130, "KFC nutrition", "https://www.kfc.com/nutrition"),

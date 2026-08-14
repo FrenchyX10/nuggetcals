@@ -222,6 +222,13 @@ function matchRecord(query: string, chain: string | null, size: PortionSize) {
     if (wantsGarden && /\b(chicken|steak|cobb|southwest|burrito|caesar)\b/.test(blob)) {
       continue;
     }
+    const wantsSweetBowl =
+      /\b(acai|açaí|smoothie bowl|yogurt bowl|granola)\b/.test(needle) ||
+      (/\bbowl\b/.test(needle) && /\b(berry|banana|mango|peanut butter|coconut)\b/.test(needle));
+    const isSavoryBowl =
+      /\b(chicken|steak|burrito|rice bowl|poke|teriyaki|sofritas|chipotle|famous bowl)\b/.test(blob);
+    if (wantsSweetBowl && isSavoryBowl) continue;
+    if (wantsSweetBowl && /\bchicken\b/.test(blob)) continue;
 
     let score = 0;
     const recordBase = stripSizeWords(record.name);

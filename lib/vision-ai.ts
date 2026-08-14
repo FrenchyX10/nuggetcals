@@ -44,6 +44,7 @@ Hard disambiguation:
 - Pizza = triangular slice or round pie with toppings, not a quesadilla unless folded.
 - Sushi is not one food. Split nigiri, sashimi, and each roll type. Count pieces. Name visible fish/fillings (salmon = orange, tuna = deep red, eel = brown glaze, avocado/cucumber = green, crab = white shreds). Never answer only "sushi".
 - Never answer only pizza, burger, chicken, pasta, salad, taco, sandwich, bowl, Asian, Indian, Mexican, Tex-Mex, Texan, Californian, Mediterranean, or seafood. Name the exact dish (tikka masala vs biryani, enchilada vs fajita, brisket vs chicken fried steak, California burrito vs taco, gyro vs falafel, salmon vs shrimp scampi, pad Thai vs ramen) and count slices / tacos / samosas / dumplings / kebabs / shrimp.
+- Acai bowl = frozen DARK PURPLE base. List toppings you see (banana, strawberry, granola, coconut, peanut butter). A pink blended bowl is a smoothie bowl. Never call either a chicken bowl or burrito bowl.
 - Do not add fries, drinks, or sides unless they are clearly in the photo.
 
 Size from what you see (small / medium / large):

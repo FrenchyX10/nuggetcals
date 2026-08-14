@@ -304,7 +304,10 @@ export const FAMILY_VARIANTS: FamilyVariant[] = [
 
   v("California burrito", "california", ["cali burrito", "california burrito"], 880, 42, 82, 38, 8, 6, 1680, 480, "burrito", false),
   v("Avocado toast", "california", ["avocado toast"], 350, 8, 32, 22, 8, 2, 420, 160, "piece", false),
-  v("Acai bowl", "california", ["acai", "açaí bowl", "smoothie bowl"], 420, 8, 72, 12, 10, 42, 120, 380, "bowl", false),
+  v("Acai bowl", "california", ["acai", "açaí bowl", "acai bowl"], 450, 8, 74, 14, 11, 38, 140, 400, "bowl", false),
+  v("Acai bowl, peanut butter", "california", ["peanut butter acai"], 540, 14, 70, 22, 12, 36, 180, 420, "bowl", false),
+  v("Berry smoothie bowl", "california", ["smoothie bowl", "berry smoothie bowl"], 380, 8, 68, 10, 8, 42, 90, 380, "bowl", false),
+  v("Mango smoothie bowl", "california", ["mango bowl"], 400, 7, 72, 10, 7, 48, 80, 380, "bowl", false),
   v("Turkey avocado sandwich", "california", ["turkey avocado"], 480, 32, 40, 20, 6, 6, 1100, 240, "sandwich", false),
   v("Chicken avocado cobb", "california", ["california cobb"], 560, 38, 18, 36, 6, 6, 1100, 360, "bowl", false),
   v("Kale salad", "california", ["kale salad", "kale caesar"], 320, 12, 24, 20, 6, 6, 620, 260, "bowl", false),
@@ -387,6 +390,10 @@ const ADDONS: FamilyVariant[] = [
   v("Naan", "indian", ["naan"], 260, 8, 45, 6, 2, 3, 480, 90, "side", false),
   v("Pita", "mediterranean", ["pita"], 170, 6, 34, 1.5, 2, 1, 320, 60, "side", false),
   v("Black beans", "mexican", ["beans"], 120, 8, 22, 0.5, 8, 0.4, 280, 130, "side", false),
+  v("Granola", "california", ["granola"], 150, 4, 22, 6, 3, 8, 70, 40, "side", false),
+  v("Peanut butter", "california", ["peanut butter drizzle"], 190, 8, 6, 16, 2, 3, 140, 32, "side", false),
+  v("Honey", "california", ["honey drizzle"], 60, 0, 17, 0, 0, 16, 1, 20, "side", false),
+  v("Coconut flakes", "california", ["coconut"], 70, 0.6, 3, 6, 2, 1, 4, 12, "side", false),
 ];
 
 const FAMILY_GUIDE: Record<FoodFamily, string> = {
@@ -407,7 +414,7 @@ const FAMILY_GUIDE: Record<FoodFamily, string> = {
   burrito:
     "Protein + style: chicken, steak, carnitas, bean and cheese, breakfast (egg). Size from how thick/long it is. Foil-wrapped still counts as a burrito.",
   bowl:
-    "Name the bowl: chicken/steak/veggie burrito bowl, poke, bibimbap, teriyaki. Visible bases (rice, greens) and toppings (beans, corn, salsa, avocado, egg).",
+    "First name the BASE, then toppings. Deep purple frozen base = acai bowl (not a smoothie, not a chicken bowl). Pink or blended fruit = smoothie bowl. White cream = yogurt bowl. Rice + salsa/beans/meat = burrito bowl. Raw fish + rice = poke. Never call an acai or smoothie bowl a chicken bowl. List toppings you actually see: banana coins, strawberry, blueberry, granola clusters, coconut shreds, peanut butter drizzle, honey, kiwi, mango, chia.",
   sandwich:
     "Name the sandwich: turkey, ham and cheese, Italian sub, club, BLT, tuna, chicken salad, grilled cheese, cheesesteak, breakfast. Bread type if obvious. Not a burger unless there is a ground patty.",
   breakfast:
@@ -425,7 +432,7 @@ const FAMILY_GUIDE: Record<FoodFamily, string> = {
   texan:
     "Name the exact Texas dish: sliced brisket plate vs brisket sandwich, pork ribs vs beef ribs, pulled pork, smoked sausage/hot links, burnt ends, chicken fried steak (breaded beef + cream gravy — not fried chicken), chicken fried chicken, BBQ two-meat plate, Texas toast, kolache, pecan pie. Count toast slices, kolaches, and rib bones if you can. Beans or toast on the side is its own group. Never answer only “BBQ” or “Texas food”.",
   california:
-    "Name the exact California dish: California burrito (carne asada + fries + cheese + guacamole inside), avocado toast, acai/smoothie bowl, turkey avocado sandwich, kale salad, grain/farro/quinoa bowl, cioppino (tomato seafood stew), sourdough grilled cheese, Baja/California fish taco, chicken avocado wrap. Count fish tacos and toast slices. Fries inside a burrito are part of the burrito, not a side. Never answer only “California food” or “healthy bowl”.",
+    "Name the exact California dish. Acai bowl = frozen DARK PURPLE/violet base (not pink smoothie, not yogurt, never chicken or rice). Smoothie bowl = blended lighter fruit, often pink. List every topping you see: sliced banana, strawberry, blueberry, granola, coconut, peanut butter, honey, kiwi, mango. Other dishes: California burrito (fries inside), avocado toast, kale/grain bowl, cioppino, sourdough grilled cheese, Baja fish taco. Never answer only “smoothie bowl” if the base is purple acai. Never suggest a chicken bowl.",
   mediterranean:
     "Name the exact dish: chicken vs lamb gyro, shawarma plate, falafel wrap vs falafel balls (count balls), hummus with pita, chicken vs lamb kebab (count skewers), souvlaki, moussaka, tabbouleh, baba ganoush, dolma (count), Greek salad, pita. Never answer only “Mediterranean” or “Greek food”.",
   steak:
@@ -755,6 +762,15 @@ function inferToppings(text: string, family: FoodFamily): string[] {
   add("queso", /\bqueso\b/);
   add("chili", /\bchili\b/);
   add("avocado", /\bavocado\b/);
+  add("acai", /\b(acai|açaí)\b/);
+  add("granola", /\bgranola\b/);
+  add("banana", /\bbanana\b/);
+  add("strawberry", /\bstrawberr/);
+  add("blueberry", /\bblueberr/);
+  add("peanut butter", /\bpeanut butter\b/);
+  add("coconut", /\bcoconut\b/);
+  add("honey", /\bhoney\b/);
+  add("mango", /\bmango\b/);
   if (family === "pizza" && found.length === 0 && /\bcheese\b/.test(raw)) found.push("cheese");
   return found;
 }
@@ -776,6 +792,10 @@ function inferExtras(text: string): string[] {
   add("naan", /\bnaan\b/);
   add("pita", /\bpita\b/);
   add("beans", /\b(black beans|refried beans|rice and beans)\b/);
+  add("granola", /\bgranola\b/);
+  add("peanut butter", /\bpeanut butter\b/);
+  add("honey", /\bhoney\b/);
+  add("coconut", /\bcoconut\b/);
   return extras;
 }
 

@@ -284,6 +284,10 @@ function hintAdjustment(
   const isCali = /\b(california burrito|avocado toast|acai|cioppino|grain bowl)\b/.test(blob);
   if (wantsTexan && isTexan) extra += 0.5;
   if (wantsCali && isCali) extra += 0.5;
+  const wantsAcai = /\b(acai|açaí|smoothie bowl)\b/.test(combined);
+  const isAcai = /\b(acai|açaí|smoothie bowl)\b/.test(blob);
+  if (wantsAcai && isAcai) extra += 0.7;
+  if (wantsAcai && /\b(chicken|steak|burrito)\b/.test(blob)) extra -= 0.9;
   return extra;
 }
 
@@ -295,12 +299,22 @@ export function suggestAlternatives(
   const restaurant = findRestaurant(restaurantInput);
   const pool = restaurant ? menuFor(restaurant) : FOODS.filter((item) => !item.restaurant);
   const hint = normalizeName(dishHint || currentName);
+  const sweet =
+    /\b(acai|açaí|smoothie|yogurt bowl|granola|berry bowl)\b/.test(hint);
   return pool
     .filter((item) => item.name !== currentName)
+    .filter((item) => {
+      const blob = normalizeName(`${item.name} ${item.aliases.join(" ")}`);
+      if (sweet && /\b(chicken|steak|burrito|taco|rice bowl|chipotle)\b/.test(blob)) {
+        return false;
+      }
+      return true;
+    })
     .map((item) => ({
       item,
       score: hintAdjustment(item, hint, [{ label: hint, score: 1 }]),
     }))
+    .filter((row) => row.score > 0.2)
     .sort((a, b) => b.score - a.score)
     .slice(0, 8)
     .map((row) => row.item);
