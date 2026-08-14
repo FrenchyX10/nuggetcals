@@ -62,6 +62,9 @@ const DISH_HINTS = [
   "Wings",
   "Fries",
   "Sushi",
+  "Curry",
+  "Gyro",
+  "Salmon",
 ];
 
 const ANALYZE_STEPS = [

@@ -19,7 +19,10 @@ export type FoodFamily =
   | "seafood"
   | "dessert"
   | "soup"
-  | "nachos";
+  | "nachos"
+  | "indian"
+  | "mexican"
+  | "mediterranean";
 
 export type FamilyGroup = {
   name: string;
@@ -53,6 +56,18 @@ const FAMILY_MATCH: Array<[FoodFamily, RegExp]> = [
   ["taco", /\b(tacos?|taquitos?|birria)\b/],
   ["nachos", /\b(nachos?|quesadilla)\b/],
   ["burrito", /\b(burritos?)\b/],
+  [
+    "mexican",
+    /\b(enchiladas?|fajitas?|tamales?|tostadas?|chimichanga|chile relleno|mole|elote|flautas?|carne asada|pozole|horchata|mexican)\b/,
+  ],
+  [
+    "indian",
+    /\b(tikka|masala|biryani|samosas?|naan|dal|tandoori|vindaloo|palak|paneer|chana|dosa|korma|saag|roti|butter chicken|curry|indian)\b/,
+  ],
+  [
+    "mediterranean",
+    /\b(gyro|shawarma|falafel|hummus|kebabs?|souvlaki|moussaka|tabbouleh|baba ganoush|dolmas?|baklava|pita|mediterranean|greek plate)\b/,
+  ],
   ["burger", /\b(burgers?|hamburgers?|cheeseburgers?|whopper|baconator)\b/],
   ["breakfast", /\b(pancakes?|waffles?|french toast|omelettes?|omelets?|hotcakes?|flapjacks?|scrambled eggs?)\b/],
   ["pasta", /\b(pasta|spaghetti|fettuccine|penne|linguine|lasagna|ravioli|alfredo|carbonara|bolognese|ziti|macaroni)\b/],
@@ -61,8 +76,14 @@ const FAMILY_MATCH: Array<[FoodFamily, RegExp]> = [
   ["sandwich", /\b(sandwich|sub|hoagie|cheesesteak|blt|panini|wrap)\b/],
   ["fries", /\b(fries|frites|poutine|onion rings|tater tots)\b/],
   ["steak", /\b(steak|ribeye|sirloin|filet mignon|ny strip|new york strip)\b/],
-  ["seafood", /\b(salmon|fish and chips|grilled fish|fried fish|cod|tilapia|fish fillet)\b/],
-  ["asian", /\b(ramen|pho|pad thai|fried rice|orange chicken|general tso|sesame chicken|lo mein|chow mein|butter chicken|curry)\b/],
+  [
+    "seafood",
+    /\b(salmon|fish and chips|grilled fish|fried fish|cod|tilapia|fish fillet|shrimp|lobster|crab|calamari|mussels?|clams?|ceviche|scampi|tuna steak|octopus|seafood)\b/,
+  ],
+  [
+    "asian",
+    /\b(ramen|pho|pad thai|fried rice|orange chicken|general tso|sesame chicken|lo mein|chow mein|kung pao|katsu|udon|bulgogi|gyoza|dumpling|spring roll|egg roll|mapo|teriyaki|pad see ew|thai|korean|chinese|vietnamese|japanese|asian)\b/,
+  ],
   ["soup", /\b(soup|chowder|bisque)\b/],
   ["dessert", /\b(cake|pie|brownie|ice cream|cookie|donut|doughnut|cheesecake)\b/],
   ["chicken", /\b(chicken|tenders?|nuggets?|rotisserie)\b/],
@@ -180,16 +201,83 @@ export const FAMILY_VARIANTS: FamilyVariant[] = [
   v("Orange chicken", "asian", ["orange chicken"], 490, 24, 52, 20, 2, 22, 980, 280, "plate", false),
   v("General Tso's chicken", "asian", ["general tso", "general tso chicken"], 520, 24, 54, 22, 2, 24, 1100, 290, "plate", false),
   v("Sesame chicken", "asian", ["sesame chicken"], 500, 24, 50, 22, 2, 20, 980, 280, "plate", false),
+  v("Kung pao chicken", "asian", ["kung pao"], 480, 26, 36, 22, 4, 12, 1100, 300, "plate", false),
+  v("Sweet and sour chicken", "asian", ["sweet and sour"], 540, 22, 62, 22, 2, 28, 980, 320, "plate", false),
   v("Beef and broccoli", "asian", ["beef broccoli"], 420, 28, 28, 20, 4, 8, 1100, 320, "plate", false),
-  v("Chicken fried rice", "asian", ["fried rice"], 520, 16, 78, 16, 3, 4, 980, 350, "plate", false),
+  v("Mongolian beef", "asian", ["mongolian beef"], 500, 28, 36, 24, 2, 16, 1400, 320, "plate", false),
+  v("Mapo tofu", "asian", ["mapo tofu"], 380, 16, 18, 26, 4, 6, 980, 300, "plate", false),
+  v("Chicken fried rice", "asian", ["fried rice", "chicken fried rice"], 520, 16, 78, 16, 3, 4, 980, 350, "plate", false),
+  v("Shrimp fried rice", "asian", ["shrimp fried rice"], 500, 18, 74, 14, 3, 4, 1100, 340, "plate", false),
   v("Lo mein", "asian", ["lo mein", "chicken lo mein"], 560, 20, 72, 20, 4, 8, 1400, 380, "plate", false),
   v("Chow mein", "asian", ["chow mein"], 500, 18, 62, 20, 5, 6, 1200, 340, "plate", false),
   v("Pad Thai", "asian", ["pad thai"], 630, 22, 82, 22, 3, 16, 1400, 400, "plate", false),
+  v("Pad see ew", "asian", ["pad see ew"], 610, 20, 80, 22, 4, 12, 1400, 400, "plate", false),
+  v("Drunken noodles", "asian", ["pad kee mao", "drunken noodles"], 640, 22, 78, 24, 4, 14, 1500, 400, "plate", false),
+  v("Green curry", "asian", ["thai green curry"], 540, 22, 36, 32, 4, 10, 1200, 380, "plate", false),
   v("Tonkotsu ramen", "asian", ["ramen", "tonkotsu"], 680, 28, 78, 26, 4, 6, 2100, 600, "bowl", false),
+  v("Shoyu ramen", "asian", ["shoyu ramen"], 520, 22, 70, 16, 3, 4, 1800, 550, "bowl", false),
   v("Pho", "asian", ["pho", "beef pho"], 450, 30, 52, 12, 2, 6, 1500, 550, "bowl", false),
-  v("Butter chicken", "asian", ["butter chicken"], 620, 34, 40, 34, 4, 10, 1100, 400, "plate", false),
-  v("Chicken curry", "asian", ["curry"], 560, 32, 42, 28, 6, 8, 980, 400, "plate", false),
+  v("Chicken pho", "asian", ["chicken pho"], 400, 26, 50, 10, 2, 6, 1400, 520, "bowl", false),
+  v("Chicken katsu", "asian", ["katsu", "tonkatsu"], 620, 32, 58, 26, 2, 8, 1200, 360, "plate", false),
+  v("Udon", "asian", ["udon"], 500, 16, 82, 12, 4, 6, 1600, 500, "bowl", false),
+  v("Bulgogi", "asian", ["bulgogi", "korean bbq"], 520, 32, 28, 28, 2, 12, 1100, 320, "plate", false),
+  v("Japchae", "asian", ["japchae"], 440, 10, 68, 14, 4, 12, 980, 300, "plate", false),
+  v("Teriyaki chicken", "asian", ["teriyaki chicken"], 480, 36, 42, 16, 2, 18, 1200, 320, "plate", false),
+  v("Gyoza piece", "asian", ["gyoza", "potsticker", "dumpling"], 50, 2.2, 6, 2, 0.3, 0.6, 120, 26, "piece", true),
+  v("Spring roll", "asian", ["spring roll", "fresh spring roll"], 80, 2, 12, 2, 1, 2, 180, 50, "piece", true),
+  v("Egg roll", "asian", ["egg roll"], 200, 6, 20, 10, 2, 2, 400, 80, "piece", true),
   v("Steamed white rice", "asian", ["white rice", "side rice"], 200, 4, 44, 0.4, 0.6, 0, 5, 160, "serving", false),
+
+  v("Chicken tikka masala", "indian", ["tikka masala"], 640, 36, 28, 38, 4, 10, 1200, 400, "plate", false),
+  v("Butter chicken", "indian", ["butter chicken", "murgh makhani"], 620, 34, 24, 38, 3, 10, 1100, 380, "plate", false),
+  v("Chicken curry", "indian", ["chicken curry"], 560, 32, 22, 32, 4, 8, 980, 360, "plate", false),
+  v("Lamb curry", "indian", ["lamb curry", "rogan josh"], 580, 32, 16, 38, 3, 6, 1100, 360, "plate", false),
+  v("Chicken vindaloo", "indian", ["vindaloo"], 540, 34, 18, 30, 4, 6, 1200, 360, "plate", false),
+  v("Chicken korma", "indian", ["korma"], 650, 30, 22, 44, 3, 8, 980, 380, "plate", false),
+  v("Tandoori chicken", "indian", ["tandoori"], 320, 42, 6, 14, 1, 3, 780, 220, "plate", false),
+  v("Chicken biryani", "indian", ["biryani", "chicken biryani"], 680, 32, 82, 22, 4, 6, 1400, 450, "plate", false),
+  v("Lamb biryani", "indian", ["lamb biryani"], 740, 34, 80, 28, 4, 6, 1500, 470, "plate", false),
+  v("Palak paneer", "indian", ["saag paneer", "palak paneer"], 480, 18, 16, 36, 5, 6, 860, 320, "plate", false),
+  v("Chana masala", "indian", ["chana masala", "chickpea curry"], 420, 16, 52, 14, 12, 8, 980, 340, "plate", false),
+  v("Dal", "indian", ["dal tadka", "lentil curry", "dal"], 280, 14, 36, 8, 10, 4, 720, 280, "bowl", false),
+  v("Malai kofta", "indian", ["kofta"], 540, 14, 32, 38, 5, 10, 980, 340, "plate", false),
+  v("Masala dosa", "indian", ["dosa"], 280, 8, 46, 8, 4, 2, 620, 220, "piece", false),
+  v("Samosa", "indian", ["samosa"], 250, 5, 28, 14, 3, 2, 380, 80, "piece", true),
+  v("Naan", "indian", ["naan", "plain naan"], 260, 8, 45, 6, 2, 3, 480, 90, "piece", true),
+  v("Garlic naan", "indian", ["garlic naan"], 320, 8, 46, 12, 2, 3, 560, 100, "piece", true),
+  v("Roti", "indian", ["roti", "chapati"], 120, 4, 20, 3, 2, 1, 180, 40, "piece", true),
+
+  v("Chicken enchilada", "mexican", ["chicken enchilada"], 240, 14, 20, 12, 3, 2, 620, 140, "piece", true),
+  v("Beef enchilada", "mexican", ["beef enchilada"], 260, 14, 20, 14, 3, 2, 680, 150, "piece", true),
+  v("Cheese enchilada", "mexican", ["cheese enchilada"], 220, 10, 18, 12, 2, 2, 580, 130, "piece", true),
+  v("Chicken fajitas", "mexican", ["chicken fajitas", "fajitas"], 520, 38, 36, 22, 6, 6, 1400, 380, "plate", false),
+  v("Steak fajitas", "mexican", ["steak fajitas"], 580, 40, 34, 26, 6, 6, 1500, 400, "plate", false),
+  v("Tamale", "mexican", ["tamale"], 280, 10, 28, 14, 3, 2, 620, 140, "piece", true),
+  v("Chile relleno", "mexican", ["chile relleno"], 420, 18, 24, 28, 3, 4, 860, 220, "piece", false),
+  v("Chimichanga", "mexican", ["chimichanga"], 780, 32, 62, 42, 6, 4, 1600, 360, "piece", false),
+  v("Tostada", "mexican", ["tostada"], 350, 16, 32, 16, 6, 3, 720, 180, "piece", true),
+  v("Carne asada plate", "mexican", ["carne asada"], 620, 42, 36, 30, 4, 4, 980, 380, "plate", false),
+  v("Chicken mole", "mexican", ["mole"], 540, 32, 40, 24, 4, 12, 1100, 360, "plate", false),
+  v("Street corn", "mexican", ["elote", "mexican street corn"], 220, 6, 22, 12, 3, 6, 380, 160, "piece", true),
+  v("Huevos rancheros", "mexican", ["huevos rancheros"], 480, 22, 36, 26, 6, 4, 980, 320, "plate", false),
+  v("Pozole", "mexican", ["pozole"], 380, 22, 36, 12, 6, 4, 1100, 420, "bowl", false),
+
+  v("Chicken gyro", "mediterranean", ["gyro", "chicken gyro"], 620, 34, 52, 28, 4, 6, 1400, 320, "sandwich", false),
+  v("Lamb gyro", "mediterranean", ["lamb gyro"], 680, 32, 50, 34, 4, 6, 1500, 330, "sandwich", false),
+  v("Chicken shawarma plate", "mediterranean", ["shawarma", "chicken shawarma"], 640, 38, 48, 28, 6, 6, 1400, 420, "plate", false),
+  v("Falafel wrap", "mediterranean", ["falafel wrap", "falafel pita"], 540, 16, 62, 24, 8, 6, 880, 280, "sandwich", false),
+  v("Falafel ball", "mediterranean", ["falafel", "falafel ball"], 60, 2.4, 5, 3.2, 1.2, 0.4, 110, 18, "piece", true),
+  v("Hummus with pita", "mediterranean", ["hummus"], 280, 10, 32, 12, 6, 2, 480, 150, "plate", false),
+  v("Chicken kebab", "mediterranean", ["chicken kebab", "chicken skewer"], 180, 22, 4, 8, 0.5, 1, 380, 90, "piece", true),
+  v("Lamb kebab", "mediterranean", ["lamb kebab", "lamb skewer"], 210, 20, 4, 12, 0.4, 1, 420, 95, "piece", true),
+  v("Souvlaki", "mediterranean", ["souvlaki"], 480, 32, 36, 20, 3, 4, 980, 280, "plate", false),
+  v("Moussaka", "mediterranean", ["moussaka"], 520, 24, 32, 30, 5, 8, 860, 340, "plate", false),
+  v("Tabbouleh", "mediterranean", ["tabbouleh", "tabouli"], 180, 4, 22, 8, 5, 3, 280, 160, "bowl", false),
+  v("Baba ganoush", "mediterranean", ["baba ganoush"], 160, 3, 12, 12, 5, 4, 280, 140, "bowl", false),
+  v("Dolma", "mediterranean", ["dolma", "stuffed grape leaf"], 45, 1.2, 6, 2, 1, 1, 140, 30, "piece", true),
+  v("Mediterranean bowl", "mediterranean", ["mediterranean bowl", "greek bowl"], 540, 28, 52, 22, 8, 6, 980, 420, "bowl", false),
+  v("Pita", "mediterranean", ["pita bread"], 170, 6, 34, 1.5, 2, 1, 320, 60, "piece", true),
+  v("Baklava", "mediterranean", ["baklava"], 190, 3, 22, 10, 1, 14, 110, 40, "piece", true),
 
   v("Grilled ribeye", "steak", ["ribeye", "rib eye"], 680, 54, 0, 50, 0, 0, 160, 240, "serving", false),
   v("Grilled sirloin", "steak", ["sirloin"], 480, 52, 0, 28, 0, 0, 140, 200, "serving", false),
@@ -197,9 +285,23 @@ export const FAMILY_VARIANTS: FamilyVariant[] = [
   v("NY strip steak", "steak", ["ny strip", "new york strip", "strip steak"], 560, 52, 0, 36, 0, 0, 150, 220, "serving", false),
 
   v("Grilled salmon", "seafood", ["salmon", "grilled salmon"], 412, 40, 0, 27, 0, 0, 90, 170, "serving", false),
+  v("Blackened salmon", "seafood", ["blackened salmon"], 430, 40, 2, 28, 0, 1, 220, 180, "serving", false),
+  v("Teriyaki salmon", "seafood", ["teriyaki salmon"], 480, 38, 24, 24, 0, 16, 780, 200, "serving", false),
+  v("Tuna steak", "seafood", ["tuna steak", "ahi tuna", "seared tuna"], 350, 46, 0, 16, 0, 0, 80, 170, "serving", false),
   v("Fish and chips", "seafood", ["fried fish", "fish and chips"], 760, 32, 72, 38, 4, 4, 980, 400, "plate", false),
   v("Grilled white fish", "seafood", ["grilled fish", "tilapia", "cod"], 280, 36, 0, 12, 0, 0, 180, 170, "serving", false),
   v("Fried shrimp", "seafood", ["fried shrimp", "popcorn shrimp"], 360, 20, 28, 18, 1, 2, 860, 160, "serving", false),
+  v("Grilled shrimp", "seafood", ["grilled shrimp", "shrimp skewer"], 40, 8, 0.4, 0.6, 0, 0, 140, 20, "piece", true),
+  v("Shrimp scampi", "seafood", ["shrimp scampi", "scampi"], 520, 28, 36, 26, 2, 2, 1100, 320, "plate", false),
+  v("Shrimp cocktail", "seafood", ["shrimp cocktail"], 160, 24, 8, 2, 0, 4, 620, 180, "serving", false),
+  v("Calamari", "seafood", ["calamari", "fried calamari"], 380, 16, 32, 20, 1, 2, 720, 160, "serving", false),
+  v("Crab cake", "seafood", ["crab cake"], 180, 12, 10, 10, 0.5, 1, 380, 70, "piece", true),
+  v("Crab legs", "seafood", ["crab legs", "snow crab"], 280, 36, 0, 14, 0, 0, 980, 220, "serving", false),
+  v("Lobster tail", "seafood", ["lobster tail", "lobster"], 220, 28, 2, 10, 0, 0, 620, 150, "piece", false),
+  v("Lobster roll", "seafood", ["lobster roll"], 520, 28, 36, 26, 2, 4, 980, 220, "sandwich", false),
+  v("Mussels marinara", "seafood", ["mussels"], 340, 28, 18, 14, 2, 4, 980, 320, "bowl", false),
+  v("Ceviche", "seafood", ["ceviche"], 220, 26, 12, 6, 2, 4, 620, 220, "bowl", false),
+  v("Grilled octopus", "seafood", ["octopus"], 280, 32, 8, 12, 0, 0, 720, 200, "serving", false),
 
   v("Chocolate cake slice", "dessert", ["chocolate cake", "cake"], 350, 4, 50, 16, 2, 36, 260, 80, "slice", true),
   v("Cheesecake slice", "dessert", ["cheesecake"], 400, 7, 32, 28, 1, 26, 260, 125, "slice", true),
@@ -230,6 +332,9 @@ const ADDONS: FamilyVariant[] = [
   v("Ranch dressing", "salad", ["ranch"], 140, 1, 2, 14, 0, 1, 280, 30, "side", false),
   v("Maple syrup", "breakfast", ["syrup"], 110, 0, 28, 0, 0, 24, 4, 40, "side", false),
   v("Steamed white rice", "asian", ["rice"], 200, 4, 44, 0.4, 0.6, 0, 5, 160, "side", false),
+  v("Naan", "indian", ["naan"], 260, 8, 45, 6, 2, 3, 480, 90, "side", false),
+  v("Pita", "mediterranean", ["pita"], 170, 6, 34, 1.5, 2, 1, 320, 60, "side", false),
+  v("Black beans", "mexican", ["beans"], 120, 8, 22, 0.5, 8, 0.4, 280, 130, "side", false),
 ];
 
 const FAMILY_GUIDE: Record<FoodFamily, string> = {
@@ -258,11 +363,17 @@ const FAMILY_GUIDE: Record<FoodFamily, string> = {
   fries:
     "Straight fries vs curly vs sweet potato vs loaded (cheese/chili) vs onion rings vs tots. Small / medium / large from the pile or carton.",
   asian:
-    "Name the dish: orange chicken, General Tso, sesame chicken, beef and broccoli, fried rice, lo mein, chow mein, pad Thai, ramen, pho, curry, butter chicken. Rice on the side if visible (add it as its own group).",
+    "Name the exact dish. Chinese: orange chicken, General Tso, sesame, kung pao, sweet and sour, beef and broccoli, Mongolian beef, mapo tofu, fried rice, lo mein, chow mein, egg roll, dumpling. Thai: pad Thai, pad see ew, drunken noodles, green curry. Japanese: ramen (tonkotsu vs shoyu), katsu, udon, teriyaki. Korean: bulgogi, japchae, bibimbap. Vietnamese: pho (beef vs chicken), spring rolls. Count dumplings, egg rolls, and spring rolls. Rice on the side is its own group. Never answer only “Asian food” or “Chinese food”.",
+  indian:
+    "Name the exact dish: chicken tikka masala (orange creamy), butter chicken (similar, slightly sweeter), chicken/lamb curry, vindaloo (darker, spicier), korma (pale creamy), tandoori (red dry grilled), biryani (rice mixed through), palak/saag paneer (green, cheese cubes), chana masala (chickpeas), dal (lentils), dosa (crispy crepe), samosa (fried triangle). Count samosas, naan, and roti. Naan or rice on the side is its own group. Never answer only “Indian food” or “curry”.",
+  mexican:
+    "Name the exact dish: tacos (already split by protein), burrito, enchiladas (count them), fajitas (sizzling peppers + meat), tamales (count), chile relleno, chimichanga (fried burrito), tostada, carne asada plate, mole, elote/street corn, huevos rancheros, pozole, quesadilla, nachos. Count enchiladas, tamales, tacos, and tostadas. Rice and beans if visible are extras. Never answer only “Mexican food”.",
+  mediterranean:
+    "Name the exact dish: chicken vs lamb gyro, shawarma plate, falafel wrap vs falafel balls (count balls), hummus with pita, chicken vs lamb kebab (count skewers), souvlaki, moussaka, tabbouleh, baba ganoush, dolma (count), Greek salad, pita. Never answer only “Mediterranean” or “Greek food”.",
   steak:
     "Cut if you can: ribeye (more fat), sirloin, NY strip, filet. Grill marks. Butter/herb on top. Sides only if visible.",
   seafood:
-    "Grilled salmon (orange-pink) vs white fish vs fried fish + fries vs fried shrimp. Do not call sushi salmon a salmon dinner unless it is a cooked fillet.",
+    "Name the exact fish and cook: grilled / blackened / teriyaki salmon (orange-pink cooked fillet), tuna steak (dark red seared), white fish, fish and chips (battered + fries), grilled vs fried shrimp (count shrimp or skewers), shrimp scampi (buttery noodles), calamari (fried rings), crab cake (count), crab legs, lobster tail vs lobster roll, mussels, ceviche, octopus. Do not call sushi or sashimi a salmon dinner. Never answer only “seafood” or “fish”.",
   dessert:
     "Cake vs cheesecake vs pie vs brownie vs cookie vs donut vs ice cream. Count slices, scoops, or cookies.",
   soup:
@@ -479,7 +590,11 @@ export function shouldMultiplyByCount(
     return count >= 2 && (calories <= 120 || /\b1 piece\b/i.test(variantName));
   }
   if (count <= 1) return false;
-  if (/\b(slice|taco|wing|pancake|waffle|tender|nugget|drumstick|piece)\b/i.test(blob)) {
+  if (
+    /\b(slice|taco|wing|pancake|waffle|tender|nugget|drumstick|piece|samosa|dumpling|gyoza|enchilada|tamale|kebab|skewer|falafel|naan|shrimp|roll)\b/i.test(
+      blob,
+    )
+  ) {
     return calories <= 420;
   }
   return calories <= 160 && count <= 24;
@@ -488,7 +603,7 @@ export function shouldMultiplyByCount(
 export function parseFamilyCount(text: string, fallback = 0) {
   const raw = text.toLowerCase();
   const patterns = [
-    /(\d{1,2})\s*(?:slices?|tacos?|wings?|pancakes?|waffles?|tenders?|nuggets?|pieces?|pcs?|pc|eggs?|strips?|scoops?|cookies?|burgers?)/i,
+    /(\d{1,2})\s*(?:slices?|tacos?|wings?|pancakes?|waffles?|tenders?|nuggets?|pieces?|pcs?|pc|eggs?|strips?|scoops?|cookies?|burgers?|samosas?|dumplings?|gyoza|enchiladas?|tamales?|kebabs?|skewers?|falafel|naan|roti|shrimp|rolls?)/i,
     /counted\s+(\d{1,2})/i,
     /assumed\s+(\d{1,2})/i,
   ];
@@ -566,6 +681,18 @@ function inferToppings(text: string, family: FoodFamily): string[] {
   add("tomato", /\btomato/);
   add("onion", /\bonion/);
   add("cilantro", /\bcilantro\b/);
+  add("paneer", /\bpaneer\b/);
+  add("chickpea", /\b(chana|chickpea)\b/);
+  add("lentil", /\b(dal|lentil)\b/);
+  add("lamb", /\blamb\b/);
+  add("falafel", /\bfalafel\b/);
+  add("hummus", /\bhummus\b/);
+  add("mole", /\bmole\b/);
+  add("curry", /\bcurry|masala|tikka|korma|vindaloo\b/);
+  add("crab", /\bcrab\b/);
+  add("lobster", /\blobster\b/);
+  add("tuna", /\btuna|ahi\b/);
+  add("octopus", /\boctopus\b/);
   if (family === "pizza" && found.length === 0 && /\bcheese\b/.test(raw)) found.push("cheese");
   return found;
 }
@@ -584,6 +711,9 @@ function inferExtras(text: string): string[] {
   add("guacamole", /\bguac|\bguacamole\b/);
   add("avocado", /\bavocado\b/);
   add("fried egg", /\bfried egg|egg on top\b/);
+  add("naan", /\bnaan\b/);
+  add("pita", /\bpita\b/);
+  add("beans", /\b(black beans|refried beans|rice and beans)\b/);
   return extras;
 }
 
@@ -599,6 +729,18 @@ function resolvedCount(group: FamilyGroup, variant: FamilyVariant, size: Portion
   if (variant.family === "chicken" && variant.perUnit) {
     return size === "small" ? 2 : size === "large" ? 4 : 3;
   }
+  if (variant.unit === "piece" && variant.family === "indian") {
+    return size === "small" ? 1 : size === "large" ? 3 : 2;
+  }
+  if (variant.unit === "piece" && (variant.family === "mexican" || variant.family === "mediterranean")) {
+    return size === "small" ? 2 : size === "large" ? 4 : 3;
+  }
+  if (variant.unit === "piece" && variant.family === "asian") {
+    return size === "small" ? 4 : size === "large" ? 8 : 6;
+  }
+  if (variant.unit === "piece" && variant.family === "seafood") {
+    return size === "small" ? 4 : size === "large" ? 10 : 6;
+  }
   return 1;
 }
 
@@ -608,6 +750,9 @@ function unitFor(family: FoodFamily) {
   if (family === "wings") return "wing";
   if (family === "breakfast") return "piece";
   if (family === "burger") return "burger";
+  if (family === "mexican") return "piece";
+  if (family === "indian") return "piece";
+  if (family === "mediterranean") return "piece";
   return "piece";
 }
 

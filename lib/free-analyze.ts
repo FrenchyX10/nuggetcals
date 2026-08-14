@@ -269,6 +269,15 @@ function hintAdjustment(
   if (wantsSushi && isBurger) extra -= 0.5;
   if (wantsPizza && isPizza) extra += 0.45;
   if (wantsPasta && isPasta) extra += 0.4;
+  const wantsIndian = /\b(curry|tikka|biryani|naan|tandoori|indian)\b/.test(combined);
+  const isIndian = /\b(curry|tikka|biryani|naan|tandoori|masala|samosa)\b/.test(blob);
+  const wantsMexican = /\b(taco|burrito|enchilada|fajita|mexican)\b/.test(combined);
+  const isMexican = /\b(taco|burrito|enchilada|fajita|tamale|quesadilla)\b/.test(blob);
+  const wantsMed = /\b(gyro|shawarma|falafel|hummus|kebab|mediterranean)\b/.test(combined);
+  const isMed = /\b(gyro|shawarma|falafel|hummus|kebab|souvlaki)\b/.test(blob);
+  if (wantsIndian && isIndian) extra += 0.5;
+  if (wantsMexican && isMexican) extra += 0.45;
+  if (wantsMed && isMed) extra += 0.5;
   return extra;
 }
 
