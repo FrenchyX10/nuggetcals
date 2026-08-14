@@ -1337,7 +1337,7 @@ video {
 
 .nug-bob {
   position: relative;
-  width: 70%;
+  width: 92%;
   animation: nug-float 2.6s ease-in-out infinite;
 }
 
@@ -1345,7 +1345,7 @@ video {
   display: block;
   width: 100%;
   height: auto;
-  border-radius: 40%;
+  border-radius: 28%;
   filter: drop-shadow(0 16px 28px rgba(0, 0, 0, 0.35));
 }
 
@@ -1368,17 +1368,21 @@ video {
   filter: hue-rotate(290deg) saturate(1.25) brightness(1.08) drop-shadow(0 16px 28px rgba(0, 0, 0, 0.35));
 }
 
-.nug-face {
+.nug-fit {
   position: absolute;
-  left: 16%;
-  top: 28%;
-  width: 68%;
-  height: 48%;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
+  overflow: visible;
+}
+
+.nug-face-g {
   fill: #3a2414;
 }
 
 .nug-eye {
+  transform-box: fill-box;
   transform-origin: center;
   animation: nug-blink 4.2s infinite;
 }
@@ -1387,37 +1391,12 @@ video {
   fill: #5a2a24;
 }
 
-.nug-acc {
-  position: absolute;
-  font-size: 2.2rem;
-  line-height: 1;
-  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.25));
+.nug-heart {
+  fill: #e35d7a;
 }
 
-.acc-bow {
-  top: -6%;
-  right: 10%;
-}
-.acc-chef {
-  top: -18%;
-  left: 28%;
-}
-.acc-shades {
-  top: 30%;
-  left: 22%;
-  font-size: 2.6rem;
-}
-.acc-crown {
-  top: -16%;
-  left: 32%;
-}
-.acc-sprout {
-  top: -10%;
-  left: 38%;
-}
-.acc-bandana {
-  top: 8%;
-  left: 30%;
+.nug-spark {
+  fill: #ffd48a;
 }
 
 .nug-stage.is-boom .nug-bob {
