@@ -54,6 +54,19 @@ export function extrasForMeal(meal: MealAnalysis): MealExtra[] {
   return MEAL_EXTRAS.filter((extra) => extra.tags.some((tag) => tags.has(tag))).slice(0, 8);
 }
 
+export function applySeenToppings(meal: MealAnalysis): MealAnalysis {
+  const blob = `${meal.mealName} ${meal.items.map((item) => `${item.name} ${item.notes}`).join(" ")}`.toLowerCase();
+  let next = meal;
+  for (const extra of extrasForMeal(meal)) {
+    const needle = extra.name.toLowerCase();
+    const hit = blob.includes(needle) || blob.includes(needle.split(" ")[0] ?? "");
+    if (hit && needle.length > 4 && !extraIsOn(next, extra)) {
+      next = toggleMealExtra(next, extra);
+    }
+  }
+  return next;
+}
+
 export function extraIsOn(meal: MealAnalysis, extra: MealExtra) {
   return meal.items.some((item) => item.name.toLowerCase() === extra.name.toLowerCase());
 }

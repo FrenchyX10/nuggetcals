@@ -31,7 +31,12 @@ import {
 } from "@/lib/portion-size";
 import { redeemCode } from "@/lib/nugget";
 import { DayLockStrip } from "@/components/DayLockStrip";
-import { extraIsOn, extrasForMeal, toggleMealExtra } from "@/lib/meal-extras";
+import {
+  applySeenToppings,
+  extraIsOn,
+  extrasForMeal,
+  toggleMealExtra,
+} from "@/lib/meal-extras";
 
 const RESTAURANTS = [
   "Chipotle",
@@ -73,11 +78,14 @@ const DISH_HINTS = [
   "Acai",
 ];
 
-const ANALYZE_STEPS = [
+const IDENTIFY_STEPS = [
   "Identifying the food on the plate…",
   "Counting pieces and naming fillings…",
-  "Using visible ingredients as a scale…",
-  "Searching USDA, FatSecret, and other nutrition sites…",
+  "Picking small, medium, or large…",
+];
+
+const RESEARCH_STEPS = [
+  "Searching USDA, FatSecret, and other sites for the dish you confirmed…",
   "Comparing sources and concluding calories…",
 ];
 
@@ -109,6 +117,8 @@ export function BitewiseApp() {
   const [sizeHint, setSizeHint] = useState<PortionSize | "">("");
   const [code, setCode] = useState("");
   const [codeNote, setCodeNote] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const [busyKind, setBusyKind] = useState<"identify" | "research">("identify");
 
   useEffect(() => {
     setHistory(loadHistory());
@@ -121,11 +131,12 @@ export function BitewiseApp() {
 
   useEffect(() => {
     if (!busy) return;
+    const steps = busyKind === "research" ? RESEARCH_STEPS : IDENTIFY_STEPS;
     const timer = window.setInterval(() => {
-      setStep((current) => (current + 1) % ANALYZE_STEPS.length);
+      setStep((current) => (current + 1) % steps.length);
     }, 2200);
     return () => window.clearInterval(timer);
-  }, [busy]);
+  }, [busy, busyKind]);
 
   const today = useMemo(() => todayTotals(history), [history]);
   const remaining = planCalories - today.calories;
@@ -167,6 +178,7 @@ export function BitewiseApp() {
     setMeal(null);
     setEntryId(null);
     setServings(1);
+    setConfirming(false);
     try {
       const prepared = await prepareImage(file);
       setPreviewUrl(prepared.previewUrl);
@@ -184,6 +196,8 @@ export function BitewiseApp() {
     }
 
     setBusy(true);
+    setBusyKind("identify");
+    setConfirming(false);
     setError(null);
     setStep(0);
 
@@ -208,6 +222,7 @@ export function BitewiseApp() {
               sizeHint,
               groqKey,
               quarterFound: quarter.found,
+              identifyOnly: true,
               localGuess: (await localSight)?.caption ?? "",
             }),
           }),
@@ -248,27 +263,16 @@ export function BitewiseApp() {
         );
       }
 
-      setMeal(nextMeal);
       if (nextMeal.isFood) {
-        setSizeHint(parsePortionSize(nextMeal.portionSize, inferMealSize(nextMeal)));
-        const id = crypto.randomUUID();
-        const entry: HistoryEntry = {
-          id,
-          createdAt: new Date().toISOString(),
-          thumbnail,
-          mealName: nextMeal.mealName,
-          restaurant: nextMeal.restaurant ?? restaurant.trim() ?? null,
-          totalCalories: nextMeal.totalCalories,
-          proteinG: nextMeal.proteinG,
-          carbsG: nextMeal.carbsG,
-          fatG: nextMeal.fatG,
-          overallConfidence: nextMeal.overallConfidence,
-          servings: 1,
-          result: nextMeal,
-        };
-        setEntryId(id);
+        const drafted = applySeenToppings(nextMeal);
+        setMeal(drafted);
+        setConfirming(true);
+        setSizeHint(parsePortionSize(drafted.portionSize, inferMealSize(drafted)));
+        setEntryId(null);
         setServings(1);
-        setHistory(addHistory(entry));
+      } else {
+        setMeal(nextMeal);
+        setConfirming(false);
       }
       window.requestAnimationFrame(() => {
         resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -289,6 +293,7 @@ export function BitewiseApp() {
     setEntryId(entry.id);
     setServings(entry.servings);
     setError(null);
+    setConfirming(false);
     window.requestAnimationFrame(() => {
       resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
@@ -344,6 +349,7 @@ export function BitewiseApp() {
     setRestaurant("");
     setDishHint("");
     setSizeHint("");
+    setConfirming(false);
   }
 
   function pickMenuItem(record: FoodRecord) {
@@ -375,10 +381,67 @@ export function BitewiseApp() {
     });
   }
 
+  async function countCalories() {
+    if (!meal || !meal.isFood) return;
+    setBusy(true);
+    setBusyKind("research");
+    setStep(0);
+    setError(null);
+    try {
+      let nextMeal = meal;
+      if (groqKey) {
+        const response = await fetch("/api/calories", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            meal,
+            restaurant: restaurant.trim(),
+            groqKey,
+          }),
+        });
+        const data = (await response.json()) as
+          | { meal: MealAnalysis }
+          | { error: string };
+        if (!response.ok || !("meal" in data)) {
+          throw new Error("error" in data ? data.error : "Calorie lookup failed.");
+        }
+        nextMeal = data.meal;
+      }
+      setMeal(nextMeal);
+      setConfirming(false);
+      const id = crypto.randomUUID();
+      const entry: HistoryEntry = {
+        id,
+        createdAt: new Date().toISOString(),
+        thumbnail: thumbnail ?? "/nugget.jpg",
+        mealName: nextMeal.mealName,
+        restaurant: nextMeal.restaurant ?? restaurant.trim() ?? null,
+        totalCalories: nextMeal.totalCalories,
+        proteinG: nextMeal.proteinG,
+        carbsG: nextMeal.carbsG,
+        fatG: nextMeal.fatG,
+        overallConfidence: nextMeal.overallConfidence,
+        servings: 1,
+        result: nextMeal,
+      };
+      setEntryId(id);
+      setServings(1);
+      setHistory(addHistory(entry));
+      window.requestAnimationFrame(() => {
+        resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Calorie lookup failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function pickAlternative(record: FoodRecord) {
     const nextMeal = mealFromRecord(record, restaurant.trim());
     setMeal(nextMeal);
     setDishHint(record.name);
+    if (confirming) return;
     if (entryId) {
       const next = history.map((item) => {
         if (item.id !== entryId) return item;
@@ -410,15 +473,15 @@ export function BitewiseApp() {
       <main>
         <section className="hero" id="top">
           <div>
-            <p className="eyebrow">Identify. Size. Calories.</p>
+            <p className="eyebrow">Identify. Confirm. Calories.</p>
             <h1>
               Count the
               <em> nuggets, stacks, and plates</em>
             </h1>
             <p className="lede">
-              Drop a real food photo. AI names the specific type — not just
-              “pizza” or “chicken” — counts what it can see, then searches
-              several nutrition sites and concludes one estimate.
+              Drop a real food photo. AI names the dish and toppings. You
+              confirm what is actually there, then it searches nutrition sites
+              and concludes calories.
             </p>
           </div>
           <aside className="hero-aside hide-mobile">
@@ -606,9 +669,13 @@ export function BitewiseApp() {
               type="button"
               className="analyze"
               disabled={busy || !imageBase64}
-              onClick={() => void analyze()}
+              onClick={() => void (confirming ? countCalories() : analyze())}
             >
-              {busy ? ANALYZE_STEPS[step] : "Count these cals"}
+              {busy
+                ? (busyKind === "research" ? RESEARCH_STEPS : IDENTIFY_STEPS)[step]
+                : confirming
+                  ? "Count these cals"
+                  : "Identify this plate"}
             </button>
             {!imageBase64 ? (
               <p className="hint">Upload a new photo to analyze. Opening a past scan only shows saved results.</p>
@@ -755,10 +822,13 @@ export function BitewiseApp() {
             <div className="result-card scanning">
               <div className="scan-bar" />
               <p className="card-kicker">Reading the plate</p>
-              <h2>{ANALYZE_STEPS[step]}</h2>
+              <h2>
+                {(busyKind === "research" ? RESEARCH_STEPS : IDENTIFY_STEPS)[step]}
+              </h2>
               <p>
-                AI names the food, then uses visible ingredients as a scale to
-                pick small, medium, or large. Calories come from that size.
+                {busyKind === "research"
+                  ? "Looking up published calories for the dish you confirmed."
+                  : "First we name the food and toppings. You confirm, then we look up calories."}
               </p>
             </div>
           ) : meal && !meal.isFood ? (
@@ -767,6 +837,20 @@ export function BitewiseApp() {
               <h2>That photo does not look like food.</h2>
               <p>{meal.notFoodReason ?? "Try a closer shot of the plate or drink."}</p>
             </div>
+          ) : meal && confirming ? (
+            <ConfirmCard
+              meal={meal}
+              onSize={changeSize}
+              onMeal={changeExtras}
+              alternatives={suggestAlternatives(
+                restaurant,
+                dishHint,
+                meal.matchedMenuItem ?? meal.mealName,
+              )}
+              onPick={pickAlternative}
+              onCount={() => void countCalories()}
+              busy={busy}
+            />
           ) : meal ? (
             <Results
               meal={meal}
@@ -784,16 +868,16 @@ export function BitewiseApp() {
           ) : (
             <div className="result-card muted" id="how">
               <p className="card-kicker">How NuggetCals works</p>
-              <h2>Identify the plate. Judge the size. Estimate calories.</h2>
+              <h2>Identify. Confirm. Then look up calories.</h2>
               <ol className="how-list">
                 <li>
-                  <strong>Identify.</strong> Vision AI names the exact type — pepperoni vs cheese pizza, Caesar vs cobb, fried vs grilled chicken, salmon nigiri vs a roll — and counts slices, tacos, wings, or pieces. It does not invent calorie numbers.
+                  <strong>Identify.</strong> Vision AI names the exact type and visible toppings. It does not invent calorie numbers yet.
                 </li>
                 <li>
-                  <strong>Size.</strong> AI uses visible ingredients as a scale — scoops, piece count, how full the plate is, or a US quarter — then picks small, medium, or large.
+                  <strong>Confirm.</strong> Fix the name, size, and extras (ranch, granola, cheese) if the photo missed them.
                 </li>
                 <li>
-                  <strong>Calories.</strong> Official S/M/L menu rows when they exist, otherwise published numbers scaled to that size. Tap Small / Medium / Large if it guessed wrong.
+                  <strong>Calories.</strong> Then it searches published sources for that confirmed dish — not a generic pancake or chicken bowl.
                 </li>
               </ol>
             </div>
@@ -842,6 +926,104 @@ export function BitewiseApp() {
         <p>NuggetCals · estimates only, not medical advice.</p>
         <p>Restaurant names make chain meals more accurate.</p>
       </footer>
+    </div>
+  );
+}
+
+function ConfirmCard({
+  meal,
+  onSize,
+  onMeal,
+  alternatives,
+  onPick,
+  onCount,
+  busy,
+}: {
+  meal: MealAnalysis;
+  onSize: (value: PortionSize) => void;
+  onMeal: (meal: MealAnalysis) => void;
+  alternatives: FoodRecord[];
+  onPick: (record: FoodRecord) => void;
+  onCount: () => void;
+  busy: boolean;
+}) {
+  const size = parsePortionSize(meal.portionSize, inferMealSize(meal));
+  return (
+    <div className="result-card">
+      <p className="card-kicker">Confirm before calories</p>
+      <h2>{meal.mealName}</h2>
+      <p className="lede" style={{ marginTop: 0 }}>
+        Check the name, size, and toppings. Calories are looked up only after
+        you confirm — so a burrito cannot become 2,000-calorie pancakes.
+      </p>
+
+      <div className="size-field">
+        <p className="field-label">Size</p>
+        <div className="chips size-picks" aria-label="Portion size">
+          {PORTION_SIZES.map((value) => (
+            <button
+              key={value}
+              type="button"
+              className={size === value ? "chip is-on" : "chip"}
+              onClick={() => onSize(value)}
+            >
+              {SIZE_LABEL[value]}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {extrasForMeal(meal).length > 0 ? (
+        <div className="alts">
+          <p className="field-label">Toppings and extras — tap what is actually there</p>
+          <div className="chips">
+            {extrasForMeal(meal).map((extra) => (
+              <button
+                key={extra.id}
+                type="button"
+                className={extraIsOn(meal, extra) ? "chip is-on" : "chip"}
+                onClick={() => onMeal(toggleMealExtra(meal, extra))}
+              >
+                {extra.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {alternatives.length > 0 ? (
+        <div className="alts">
+          <p className="card-kicker">Wrong dish? Tap the right one</p>
+          <div className="chips">
+            {alternatives.map((item) => (
+              <button
+                key={`${item.restaurant ?? "g"}-${item.name}`}
+                type="button"
+                className="chip"
+                onClick={() => onPick(item)}
+              >
+                {item.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      <ul className="items">
+        {meal.items.map((item) => (
+          <li key={`${item.name}-${item.portionDescription}`}>
+            <div>
+              <strong>{item.name}</strong>
+              <small>{item.portionDescription}</small>
+              <em>{item.notes}</em>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      <button type="button" className="analyze" disabled={busy} onClick={onCount}>
+        {busy ? "Looking up calories…" : "Count calories for this"}
+      </button>
     </div>
   );
 }

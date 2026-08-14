@@ -21,6 +21,7 @@ export async function POST(request: Request) {
   const imageBase64 = readString(body, "imageBase64", 12_000_000);
   const groqKey = readString(body, "groqKey", 200);
   const quarterFound = readBoolean(body, "quarterFound");
+  const identifyOnly = readBoolean(body, "identifyOnly");
 
   const auth = groqKey
     ? { provider: "groq" as const, key: groqKey }
@@ -52,6 +53,7 @@ export async function POST(request: Request) {
       sizeHint,
       localGuess,
       quarterFound,
+      identifyOnly,
       provider: auth.provider,
       apiKey: auth.key,
     });

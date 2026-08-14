@@ -64,6 +64,7 @@ export async function analyzeWithFreeVision(options: {
   sizeHint?: string;
   localGuess?: string;
   quarterFound?: boolean;
+  identifyOnly?: boolean;
   provider: "groq" | "gemini";
   apiKey: string;
 }): Promise<MealAnalysis> {
@@ -281,6 +282,13 @@ export async function analyzeWithFreeVision(options: {
 
   const refined = refineMealWithPublishedNutrition(skeleton, options.restaurant, hint);
   refined.restaurant = displayRestaurant(options.restaurant) ?? refined.restaurant;
+  if (options.identifyOnly) {
+    return {
+      ...refined,
+      precisionNotes:
+        "Confirm the dish, size, and toppings. Calories are looked up only after you tap Count calories.",
+    };
+  }
   try {
     return await enrichCaloriesFromSources(refined, {
       restaurant: options.restaurant,
