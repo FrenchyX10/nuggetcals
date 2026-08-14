@@ -1,5 +1,17 @@
 import type { NuggetAccessory, NuggetColor, NuggetFace } from "@/lib/nugget";
 
+const NUGGET_SKIN: Record<NuggetColor, string> = {
+  classic: "/nugget.jpg",
+  honey: "/nugget-honey.jpg",
+  golden: "/nugget-golden.jpg",
+  spicy: "/nugget-spicy.jpg",
+  matcha: "/nugget-matcha.jpg",
+  midnight: "/nugget-midnight.jpg",
+  cotton: "/nugget-cotton.jpg",
+  bacon: "/nugget-bacon.jpg",
+  spider: "/nugget-spider.jpg",
+};
+
 export function NuggetAvatar({
   color,
   face,
@@ -24,13 +36,7 @@ export function NuggetAvatar({
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           className="nug-body"
-          src={
-            color === "spider"
-              ? "/nugget-spider.jpg"
-              : color === "bacon"
-                ? "/nugget-bacon.jpg"
-                : "/nugget.jpg"
-          }
+          src={NUGGET_SKIN[color] ?? "/nugget.jpg"}
           alt="Your Nugget"
         />
         <svg className="nug-fit" viewBox="0 0 100 100" aria-hidden>

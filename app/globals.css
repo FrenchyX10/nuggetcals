@@ -1358,27 +1358,13 @@ video {
   filter: drop-shadow(0 16px 28px rgba(0, 0, 0, 0.35));
 }
 
-.color-honey .nug-body {
-  filter: sepia(0.25) saturate(1.35) drop-shadow(0 16px 28px rgba(0, 0, 0, 0.35));
-}
-.color-golden .nug-body {
-  filter: sepia(0.45) hue-rotate(8deg) saturate(1.55) drop-shadow(0 16px 28px rgba(0, 0, 0, 0.35));
-}
-.color-spicy .nug-body {
-  filter: hue-rotate(-18deg) saturate(1.45) drop-shadow(0 16px 28px rgba(0, 0, 0, 0.35));
-}
-.color-matcha .nug-body {
-  filter: hue-rotate(72deg) saturate(0.95) drop-shadow(0 16px 28px rgba(0, 0, 0, 0.35));
-}
-.color-midnight .nug-body {
-  filter: hue-rotate(200deg) saturate(0.55) brightness(0.72) drop-shadow(0 16px 28px rgba(0, 0, 0, 0.35));
-}
-.color-cotton .nug-body {
-  filter: hue-rotate(290deg) saturate(1.25) brightness(1.08) drop-shadow(0 16px 28px rgba(0, 0, 0, 0.35));
-}
-.color-bacon .nug-body {
-  filter: drop-shadow(0 16px 28px rgba(80, 18, 8, 0.45));
-}
+.color-honey .nug-body,
+.color-golden .nug-body,
+.color-spicy .nug-body,
+.color-matcha .nug-body,
+.color-midnight .nug-body,
+.color-cotton .nug-body,
+.color-bacon .nug-body,
 .color-spider .nug-body {
   filter: drop-shadow(0 16px 28px rgba(0, 0, 0, 0.35));
 }
