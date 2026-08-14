@@ -127,34 +127,38 @@ function AccessoryMark({ kind }: { kind: NuggetAccessory }) {
   if (kind === "none") return null;
   if (kind === "crown") {
     return (
-      <g transform="translate(50 27)">
+      <g transform="translate(50 22)">
         <path
-          d="M-14 8 L-14 -2 L-7 4 L0 -6 L7 4 L14 -2 L14 8 Z"
-          fill="#f0b45a"
-          stroke="#c9842a"
-          strokeWidth="1"
+          d="M-18 11 L-18 -3 L-9 4 L0 -11 L9 4 L18 -3 L18 11 Z"
+          fill="#ffd48a"
+          stroke="#8a5a14"
+          strokeWidth="1.4"
         />
-        <circle cx="-14" cy="-3" r="1.8" fill="#ffd48a" />
-        <circle cx="0" cy="-7" r="2" fill="#ff8a3d" />
-        <circle cx="14" cy="-3" r="1.8" fill="#ffd48a" />
+        <rect x="-18.5" y="9" width="37" height="4.2" rx="1.2" fill="#e0b15a" stroke="#8a5a14" strokeWidth="0.8" />
+        <circle cx="-12" cy="4" r="2.6" fill="#e23b4a" stroke="#7a1822" strokeWidth="0.5" />
+        <circle cx="0" cy="1" r="3.1" fill="#3d8bff" stroke="#1a3f8a" strokeWidth="0.5" />
+        <circle cx="12" cy="4" r="2.6" fill="#3dce78" stroke="#1a6b3c" strokeWidth="0.5" />
+        <circle cx="-12" cy="3.1" r="0.8" fill="#fff" opacity="0.75" />
+        <circle cx="0" cy="0" r="0.9" fill="#fff" opacity="0.75" />
+        <circle cx="12" cy="3.1" r="0.8" fill="#fff" opacity="0.75" />
       </g>
     );
   }
   if (kind === "chef") {
     return (
-      <g transform="translate(50 24)">
-        <ellipse cx="0" cy="-6" rx="13" ry="9" fill="#f6ecdc" />
-        <rect x="-11" y="-2" width="22" height="10" rx="3" fill="#f6ecdc" />
-        <rect x="-13" y="7" width="26" height="4" rx="1.5" fill="#e8d8c4" />
+      <g transform="translate(50 17)">
+        <ellipse cx="0" cy="-8" rx="15" ry="11" fill="#f6ecdc" stroke="#c9b8a2" strokeWidth="0.7" />
+        <rect x="-12" y="-3" width="24" height="11" rx="3" fill="#f6ecdc" />
+        <rect x="-15" y="7" width="30" height="4.5" rx="1.6" fill="#e8d8c4" stroke="#c9b8a2" strokeWidth="0.6" />
       </g>
     );
   }
   if (kind === "sprout") {
     return (
-      <g transform="translate(50 26)">
-        <path d="M0 10 C0 2 0 -2 0 -8" stroke="#3d6b3a" strokeWidth="1.8" fill="none" />
-        <ellipse cx="-5" cy="-6" rx="5" ry="3.2" fill="#7dcea0" transform="rotate(-28)" />
-        <ellipse cx="5" cy="-7" rx="5" ry="3.2" fill="#5bbf86" transform="rotate(24)" />
+      <g transform="translate(50 16)">
+        <path d="M0 12 C0 4 0 -2 0 -11" stroke="#3d6b3a" strokeWidth="2" fill="none" />
+        <ellipse cx="-6" cy="-9" rx="6" ry="3.6" fill="#7dcea0" transform="rotate(-30 -6 -9)" />
+        <ellipse cx="6" cy="-10" rx="6" ry="3.6" fill="#5bbf86" transform="rotate(26 6 -10)" />
       </g>
     );
   }
@@ -180,14 +184,14 @@ function AccessoryMark({ kind }: { kind: NuggetAccessory }) {
   }
   if (kind === "bandana") {
     return (
-      <g transform="translate(50 41)">
+      <g transform="translate(50 33)">
         <path
-          d="M-22 1 Q0 -9 22 1 L18 9 Q0 3 -18 9 Z"
+          d="M-22 1 Q0 -8 22 1 L18 8 Q0 2 -18 8 Z"
           fill="#c23b2e"
           stroke="#8d261c"
           strokeWidth="0.6"
         />
-        <path d="M17 6 L26 14 L15 11 Z" fill="#c23b2e" />
+        <path d="M17 5 L26 13 L15 10 Z" fill="#c23b2e" />
       </g>
     );
   }
