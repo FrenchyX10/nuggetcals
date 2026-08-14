@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { kcal } from "@/lib/format";
-import { applyGoalStreak, loadNugget, saveNugget } from "@/lib/nugget";
+import { applyGoalStreak, clawBackNugsIfOver, loadNugget, saveNugget } from "@/lib/nugget";
 
 export type SitePage = "meals" | "snacks" | "homemade" | "drinks" | "trends" | "nugget";
 
@@ -25,7 +25,8 @@ export function SiteHeader({
   active: SitePage;
 }) {
   useEffect(() => {
-    const next = applyGoalStreak(loadNugget(), todayCalories, planCalories);
+    const clawed = clawBackNugsIfOver(loadNugget(), todayCalories, planCalories);
+    const next = applyGoalStreak(clawed, todayCalories, planCalories);
     saveNugget(next);
   }, [todayCalories, planCalories]);
 

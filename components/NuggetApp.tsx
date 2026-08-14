@@ -11,7 +11,11 @@ import {
   applyGoalStreak,
   buyItem,
   canCollect,
+  clawBackNugsIfOver,
   collectDailyNugs,
+  mealsClosedToday,
+  todayKey,
+  toggleMealsClosed,
   loadNugget,
   nuggetMood,
   nuggetScale,
@@ -42,7 +46,8 @@ export function NuggetApp() {
     const today = todayTotals(loadHistory());
     setPlanCalories(plan.calories);
     setTodayCalories(today.calories);
-    const next = applyGoalStreak(loadNugget(), today.calories, plan.calories);
+    const clawed = clawBackNugsIfOver(loadNugget(), today.calories, plan.calories);
+    const next = applyGoalStreak(clawed, today.calories, plan.calories);
     saveNugget(next);
     setSave(next);
   }, []);
@@ -62,6 +67,8 @@ export function NuggetApp() {
   const remaining = planCalories - todayCalories;
   const room = 100 - Math.max(0, todayCalories - planCalories);
   const collectible = save ? canCollect(save, todayCalories, planCalories) : false;
+  const dayClosed = save ? mealsClosedToday(save) : false;
+  const collectedToday = save?.lastAwardDay === todayKey();
 
   const items = useMemo(() => {
     const owned = new Set(save?.unlocked ?? []);
@@ -85,6 +92,19 @@ export function NuggetApp() {
   function collect() {
     if (!collectible) return;
     commit(collectDailyNugs(nug), "+10 Nugs. Your nugget is proud.");
+  }
+
+  function toggleDay() {
+    const next = toggleMealsClosed(nug);
+    const closed = mealsClosedToday(next);
+    commit(
+      next,
+      closed
+        ? "Day locked. No more meals — collect Nugs if you stayed under."
+        : collectedToday
+          ? "Still eating. Today's 10 Nugs were taken back."
+          : "Still eating. Log more, then lock the day again.",
+    );
   }
 
   function tryItem(item: ShopItem) {
@@ -121,8 +141,8 @@ export function NuggetApp() {
         : mood === "proud"
           ? "Nice and full. Stay under to earn Nugs."
           : mood === "happy"
-            ? "Growing with every meal. Keep it under the goal."
-            : "Log food and watch it grow. Stay under to earn Nugs.";
+            ? "Growing with every meal. Lock the day when you are done to earn Nugs."
+            : "Log food and watch it grow. Lock the day when you are done, then collect.";
 
   return (
     <div className="page-shell">
@@ -160,22 +180,30 @@ export function NuggetApp() {
           </p>
           {exploded ? (
             <p className="nug-warn">No Nugs today. Tomorrow is a fresh fryer.</p>
-          ) : collectible ? (
-            <button type="button" className="analyze nug-collect" onClick={collect}>
-              Collect 10 Nugs
-            </button>
           ) : todayCalories > planCalories ? (
-            <p className="nug-warn">Over goal. Streak reset to 0.</p>
-          ) : nug.lastAwardDay ? (
-            <p className="hint">
-              Streak {nug.streak} day{nug.streak === 1 ? "" : "s"}. Stay at or under {kcal(planCalories)} or it drops to zero.
-            </p>
+            <p className="nug-warn">Over goal. Streak reset to 0. No Nugs.</p>
           ) : (
-            <p className="hint">
-              Stay at or under {kcal(planCalories)} to grow your streak and collect 10 Nugs.
-              Go over and the streak is gone. Pop at +100.
-              {room < 100 && remaining < 0 ? ` ${room} kcal until boom.` : ""}
-            </p>
+            <div className="nug-daylock">
+              <button
+                type="button"
+                className={dayClosed ? "ghost nug-collect" : "analyze nug-collect"}
+                onClick={toggleDay}
+              >
+                {dayClosed ? "Still eating" : "No more meals today"}
+              </button>
+              {collectible ? (
+                <button type="button" className="analyze nug-collect" onClick={collect}>
+                  Collect 10 Nugs
+                </button>
+              ) : null}
+              <p className="hint">
+                {collectedToday
+                  ? `Nugs collected. If you eat more, tap Still eating — the 10 Nugs come back off.`
+                  : dayClosed
+                    ? `Day locked at ${kcal(todayCalories)} / ${kcal(planCalories)}. Collect if you stayed under, or tap Still eating to log more.`
+                    : `Logging a meal does not give Nugs. When you are done for the day, lock it, then collect. That way you cannot cash in and still go over.`}
+              </p>
+            </div>
           )}
         </section>
 

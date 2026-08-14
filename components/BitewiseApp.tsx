@@ -30,6 +30,7 @@ import {
   type PortionSize,
 } from "@/lib/portion-size";
 import { redeemCode } from "@/lib/nugget";
+import { DayLockStrip } from "@/components/DayLockStrip";
 
 const RESTAURANTS = [
   "Chipotle",
@@ -773,6 +774,8 @@ export function BitewiseApp() {
           )}
         </section>
       </main>
+
+      <DayLockStrip />
 
       <section className="code-strip" aria-label="Redeem a code">
         <input

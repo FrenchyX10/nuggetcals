@@ -28,6 +28,7 @@ export type NuggetSave = {
   accessory: NuggetAccessory;
   unlocked: string[];
   lastAwardDay: string | null;
+  mealsClosedDay: string | null;
   streak: number;
   streakDay: string | null;
   brokeDay: string | null;
@@ -82,6 +83,7 @@ export function defaultNugget(): NuggetSave {
     accessory: "none",
     unlocked: [...FREE],
     lastAwardDay: null,
+    mealsClosedDay: null,
     streak: 0,
     streakDay: null,
     brokeDay: null,
@@ -106,6 +108,7 @@ export function loadNugget(): NuggetSave {
       claimedCodes: Array.isArray(parsed.claimedCodes) ? parsed.claimedCodes : [],
       streakDay: typeof parsed.streakDay === "string" ? parsed.streakDay : null,
       brokeDay: typeof parsed.brokeDay === "string" ? parsed.brokeDay : null,
+      mealsClosedDay: typeof parsed.mealsClosedDay === "string" ? parsed.mealsClosedDay : null,
     };
   } catch {
     return defaultNugget();
@@ -132,12 +135,59 @@ export function nuggetScale(todayCalories: number, planCalories: number) {
   return 0.84 + share * 0.28;
 }
 
+export function mealsClosedToday(save: NuggetSave) {
+  return save.mealsClosedDay === todayKey();
+}
+
 export function canCollect(save: NuggetSave, todayCalories: number, planCalories: number) {
   const day = todayKey();
   if (save.lastAwardDay === day) return false;
+  if (!mealsClosedToday(save)) return false;
   if (todayCalories <= 0) return false;
   if (todayCalories - planCalories >= 100) return false;
   return todayCalories <= planCalories;
+}
+
+export function closeMealsForDay(save: NuggetSave): NuggetSave {
+  return {
+    ...save,
+    mealsClosedDay: todayKey(),
+    lastVisitDay: todayKey(),
+  };
+}
+
+/** Reopen the day. If Nugs were already collected, take them back. */
+export function reopenMealsForDay(save: NuggetSave): NuggetSave {
+  const day = todayKey();
+  const awarded = save.lastAwardDay === day;
+  return {
+    ...save,
+    mealsClosedDay: save.mealsClosedDay === day ? null : save.mealsClosedDay,
+    lastAwardDay: awarded ? null : save.lastAwardDay,
+    nugs: awarded ? Math.max(0, save.nugs - 10) : save.nugs,
+    lastVisitDay: day,
+  };
+}
+
+export function toggleMealsClosed(save: NuggetSave): NuggetSave {
+  return mealsClosedToday(save) ? reopenMealsForDay(save) : closeMealsForDay(save);
+}
+
+/** If they collected, then logged more and went over, undo the Nugs. */
+export function clawBackNugsIfOver(
+  save: NuggetSave,
+  todayCalories: number,
+  planCalories: number,
+): NuggetSave {
+  const day = todayKey();
+  if (save.lastAwardDay !== day) return save;
+  if (todayCalories <= planCalories) return save;
+  return {
+    ...save,
+    lastAwardDay: null,
+    nugs: Math.max(0, save.nugs - 10),
+    lastVisitDay: day,
+  };
 }
 
 const SECRET_CODES: Record<
@@ -211,6 +261,7 @@ export function applyGoalStreak(
 export function collectDailyNugs(save: NuggetSave): NuggetSave {
   const day = todayKey();
   if (save.lastAwardDay === day) return save;
+  if (!mealsClosedToday(save)) return save;
   return {
     ...save,
     nugs: save.nugs + 10,

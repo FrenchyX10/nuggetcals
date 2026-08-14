@@ -1447,6 +1447,40 @@ video {
   max-width: 280px;
 }
 
+.nug-daylock {
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  width: 100%;
+  max-width: 360px;
+  margin: 0 auto;
+}
+
+.nug-daylock .hint {
+  text-align: center;
+  margin: 0;
+}
+
+.day-lock {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin: 8px 0 4px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 214, 160, 0.14);
+  border-radius: 14px;
+  background: rgba(28, 16, 10, 0.35);
+}
+
+.day-lock p {
+  margin: 0;
+  flex: 1 1 180px;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
 .nug-shop {
   padding: 6px 0 20px;
 }
