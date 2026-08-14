@@ -1528,6 +1528,19 @@ video {
   font-size: 0.82rem;
 }
 
+.nug-new {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #c23b2e;
+  color: #fff4ea;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  vertical-align: middle;
+}
+
 .nug-trybar {
   position: sticky;
   bottom: 8px;

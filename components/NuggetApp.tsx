@@ -37,7 +37,7 @@ export function NuggetApp() {
   const [save, setSave] = useState<NuggetSave | null>(null);
   const [todayCalories, setTodayCalories] = useState(0);
   const [planCalories, setPlanCalories] = useState(2000);
-  const [tab, setTab] = useState<ShopKind | "all">("all");
+  const [tab, setTab] = useState<ShopKind | "all">("color");
   const [toast, setToast] = useState<string | null>(null);
   const [trying, setTrying] = useState<ShopItem | null>(null);
 
@@ -75,7 +75,7 @@ export function NuggetApp() {
     return SHOP.filter((item) => {
       if (item.secret && !owned.has(item.id)) return false;
       return tab === "all" || item.kind === tab;
-    });
+    }).sort((a, b) => Number(Boolean(b.featured)) - Number(Boolean(a.featured)));
   }, [tab, save]);
 
   if (!save) {
@@ -208,6 +208,7 @@ export function NuggetApp() {
         </section>
 
         <section className="nug-shop">
+          <p className="card-kicker">Shop</p>
           <div className="chips size-picks" aria-label="Customize">
             {TABS.map((item) => (
               <button
@@ -236,7 +237,10 @@ export function NuggetApp() {
                     className={`nug-sku ${wearing || previewing ? "is-on" : ""}`}
                     onClick={() => tryItem(item)}
                   >
-                    <strong>{item.name}</strong>
+                    <strong>
+                      {item.name}
+                      {item.featured && !owned ? <span className="nug-new">New</span> : null}
+                    </strong>
                     <small>{item.blurb}</small>
                     <em>
                       {wearing

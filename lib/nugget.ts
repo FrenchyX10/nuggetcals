@@ -20,6 +20,7 @@ export type ShopItem = {
   blurb: string;
   cost: number;
   secret?: boolean;
+  featured?: boolean;
 };
 
 export type NuggetSave = {
@@ -41,19 +42,20 @@ const KEY = "nuggetcals-nugget-v1";
 
 export const SHOP: ShopItem[] = [
   { id: "classic", kind: "color", name: "Classic fry", blurb: "The original golden bite", cost: 0 },
-  { id: "honey", kind: "color", name: "Honey glaze", blurb: "Warm and extra crispy", cost: 20 },
-  { id: "golden", kind: "color", name: "24k crunch", blurb: "Trophy-shelf shine", cost: 30 },
-  { id: "spicy", kind: "color", name: "Hot honey", blurb: "A little kick", cost: 40 },
-  { id: "matcha", kind: "color", name: "Matcha", blurb: "Green-tea glow", cost: 40 },
-  { id: "midnight", kind: "color", name: "Midnight", blurb: "After-hours nugget", cost: 50 },
-  { id: "cotton", kind: "color", name: "Cotton candy", blurb: "Carnival sweet", cost: 60 },
   {
     id: "bacon",
     kind: "color",
     name: "Crispy bacon",
     blurb: "Maple-kissed, fat-streaked, extra sizzle",
     cost: 100,
+    featured: true,
   },
+  { id: "honey", kind: "color", name: "Honey glaze", blurb: "Warm and extra crispy", cost: 20 },
+  { id: "golden", kind: "color", name: "24k crunch", blurb: "Trophy-shelf shine", cost: 30 },
+  { id: "spicy", kind: "color", name: "Hot honey", blurb: "A little kick", cost: 40 },
+  { id: "matcha", kind: "color", name: "Matcha", blurb: "Green-tea glow", cost: 40 },
+  { id: "midnight", kind: "color", name: "Midnight", blurb: "After-hours nugget", cost: 50 },
+  { id: "cotton", kind: "color", name: "Cotton candy", blurb: "Carnival sweet", cost: 60 },
   {
     id: "spider",
     kind: "color",
