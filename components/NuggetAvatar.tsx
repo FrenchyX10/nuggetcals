@@ -28,6 +28,7 @@ export function NuggetAvatar({
           alt="Your Nugget"
         />
         <svg className="nug-fit" viewBox="0 0 100 100" aria-hidden>
+          {color === "bacon" && !exploded ? <BaconStreaks /> : null}
           <g className={`nug-face-g face-${shownFace}`} transform="translate(50 51)">
             <FaceMark face={shownFace} hideEyes={accessory === "shades" && !exploded} />
           </g>
@@ -36,6 +37,49 @@ export function NuggetAvatar({
       </div>
       {exploded ? <p className="nug-boom-label">BOOM</p> : null}
     </div>
+  );
+}
+
+function BaconStreaks() {
+  return (
+    <g className="nug-bacon" opacity="0.72">
+      <path
+        d="M18 28 C34 22 52 26 70 22 C78 32 80 48 76 64 C58 70 40 66 24 72 C16 54 14 40 18 28 Z"
+        fill="none"
+      />
+      <path
+        d="M22 36 Q40 30 58 34 Q72 38 78 48"
+        fill="none"
+        stroke="#f3d7b0"
+        strokeWidth="5.2"
+        strokeLinecap="round"
+        opacity="0.7"
+      />
+      <path
+        d="M20 48 Q38 42 56 47 Q70 52 76 60"
+        fill="none"
+        stroke="#7a1f18"
+        strokeWidth="3.4"
+        strokeLinecap="round"
+        opacity="0.55"
+      />
+      <path
+        d="M24 58 Q42 54 60 58 Q72 62 74 70"
+        fill="none"
+        stroke="#f6e2c4"
+        strokeWidth="4.2"
+        strokeLinecap="round"
+        opacity="0.55"
+      />
+      <path
+        d="M26 68 Q44 64 62 69"
+        fill="none"
+        stroke="#5c1612"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        opacity="0.45"
+      />
+    </g>
   );
 }
 

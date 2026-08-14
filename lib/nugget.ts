@@ -6,6 +6,7 @@ export type NuggetColor =
   | "matcha"
   | "midnight"
   | "cotton"
+  | "bacon"
   | "spider";
 export type NuggetFace = "happy" | "wink" | "hearts" | "cool" | "sleepy" | "sparkle";
 export type NuggetAccessory = "none" | "bow" | "chef" | "shades" | "crown" | "sprout" | "bandana";
@@ -46,6 +47,13 @@ export const SHOP: ShopItem[] = [
   { id: "matcha", kind: "color", name: "Matcha", blurb: "Green-tea glow", cost: 40 },
   { id: "midnight", kind: "color", name: "Midnight", blurb: "After-hours nugget", cost: 50 },
   { id: "cotton", kind: "color", name: "Cotton candy", blurb: "Carnival sweet", cost: 60 },
+  {
+    id: "bacon",
+    kind: "color",
+    name: "Crispy bacon",
+    blurb: "Maple-kissed, fat-streaked, extra sizzle",
+    cost: 100,
+  },
   {
     id: "spider",
     kind: "color",
