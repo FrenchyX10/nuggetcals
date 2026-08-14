@@ -439,7 +439,7 @@ Quarter detector: ${quarterFound ? "possible quarter in the photo" : "no quarter
 
 If the photo shows a stack of round cakes or syrup/berries, name pancakes or waffles, even if the on-device guess says chicken.
 If you see a bun and a patty, it is a burger or sandwich, not loose fried chicken.
-If this is sushi, do not return one item named sushi. One items[] row per type (salmon nigiri, tuna nigiri, California roll, …) with pieces and fillings.
+If this is sushi, do not return one item named sushi. One items[] row per type (salmon nigiri, tuna nigiri, dragon roll, …). For a cut roll, pieces = bite-size slices (usually 6–8), not 1.
 If this is pizza, burger, chicken, pasta, salad, tacos, sandwich, wings, or pancakes, name the exact type and count units. Never return only “pizza” or “chicken”.
 
 Return only this JSON:

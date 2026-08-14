@@ -472,9 +472,13 @@ export function shouldMultiplyByCount(
   calories: number,
   count: number,
 ) {
-  if (count <= 1) return false;
   const blob = `${name} ${variantName}`;
-  if (looksLikeSushi(blob)) return calories <= 120 || /piece|slice/i.test(variantName);
+  if (looksLikeSushi(blob)) {
+    const wholeRoll = calories > 120 || /\b(6|8)\s*pieces\b/i.test(variantName);
+    if (wholeRoll) return false;
+    return count >= 2 && (calories <= 120 || /\b1 piece\b/i.test(variantName));
+  }
+  if (count <= 1) return false;
   if (/\b(slice|taco|wing|pancake|waffle|tender|nugget|drumstick|piece)\b/i.test(blob)) {
     return calories <= 420;
   }

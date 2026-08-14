@@ -80,11 +80,10 @@ export function looksLikeSushi(...parts: string[]) {
 export function parsePieceCount(text: string, fallback = 0) {
   const raw = text.toLowerCase();
   const patterns = [
-    /(\d{1,2})\s*(?:pieces?|pcs?|pc|slices?|nigiri|rolls?)/i,
+    /(\d{1,2})\s*(?:pieces?|pcs?|pc|slices?|nigiri)\b/i,
     /counted\s+(\d{1,2})/i,
     /assumed\s+(\d{1,2})/i,
-    /used\s+(\d{1,2})\b/i,
-    /x\s*(\d{1,2})\b/i,
+    /(\d{1,2})\s*x\b/i,
   ];
   for (const pattern of patterns) {
     const match = raw.match(pattern);
@@ -94,6 +93,43 @@ export function parsePieceCount(text: string, fallback = 0) {
     }
   }
   return fallback;
+}
+
+const CUT_ROLL =
+  /\b(dragon|california|rainbow|philadelphia|philly|spider|tempura|spicy tuna|spicy salmon|avocado|cucumber|tuna maki|salmon maki|vegetable|eel avocado|uramaki|maki)\b.*\broll\b|\broll\b.*\b(dragon|california|rainbow|philadelphia|spider|tempura)\b|\b(dragon roll|california roll|rainbow roll)\b/i;
+
+export function isCutSushiRoll(name: string, kind?: SushiKind) {
+  if (kind === "maki" || kind === "uramaki") return true;
+  if (kind === "nigiri" || kind === "sashimi" || kind === "side" || kind === "temaki" || kind === "chirashi") {
+    return false;
+  }
+  return CUT_ROLL.test(name) || (/\broll\b/i.test(name) && !/\bhand roll|temaki|1 piece|one piece\b/i.test(name));
+}
+
+/** One cut roll is 6–8 slices, never one 55-kcal bite unless the photo is a single slice. */
+export function resolveSushiPieceCount(options: {
+  name: string;
+  notes?: string;
+  kind?: SushiKind;
+  reported?: number;
+  size?: PortionSize;
+}) {
+  const blob = `${options.name} ${options.notes ?? ""}`;
+  const reported = options.reported && options.reported > 0 ? options.reported : 0;
+  const fromText = parsePieceCount(blob, 0);
+  const singleSlice = /\b(1|one|single)\s+(piece|slice|bite)\b/i.test(blob);
+  const cutRoll = isCutSushiRoll(options.name, options.kind);
+
+  if (reported >= 3) return reported;
+  if (fromText >= 3) return fromText;
+  if (singleSlice && (reported === 1 || fromText === 1)) return 1;
+  if (cutRoll) {
+    if (reported === 2 || fromText === 2) return reported || fromText;
+    return defaultPiecesForSize(options.size ?? "medium", options.kind ?? "uramaki");
+  }
+  if (reported > 0) return reported;
+  if (fromText > 0) return fromText;
+  return defaultPiecesForSize(options.size ?? "medium", options.kind ?? "unknown");
 }
 
 export function sizeFromPieces(pieces: number): PortionSize {
@@ -107,8 +143,8 @@ export function defaultPiecesForSize(size: PortionSize, kind: SushiKind) {
   if (kind === "temaki") return size === "small" ? 1 : size === "large" ? 3 : 2;
   if (kind === "chirashi") return 1;
   if (size === "small") return kind === "nigiri" || kind === "sashimi" ? 4 : 6;
-  if (size === "large") return kind === "nigiri" || kind === "sashimi" ? 8 : 16;
-  return kind === "nigiri" || kind === "sashimi" ? 6 : 10;
+  if (size === "large") return kind === "nigiri" || kind === "sashimi" ? 8 : 8;
+  return kind === "nigiri" || kind === "sashimi" ? 6 : 8;
 }
 
 export function parseSushiInspection(text: string): {
@@ -162,10 +198,13 @@ export function groupsFromIdentity(options: {
         ? item.fillings
         : inferFillings(`${item.name} ${item.notes} ${options.lookClues ?? ""}`);
       const kind = inferKind(`${item.name} ${item.notes}`, fillings);
-      const pieces =
-        item.pieces && item.pieces > 0
-          ? item.pieces
-          : parsePieceCount(`${item.name} ${item.notes}`, 0);
+      const pieces = resolveSushiPieceCount({
+        name: item.name,
+        notes: item.notes,
+        kind,
+        reported: item.pieces,
+        size: item.size,
+      });
       return {
         name: nameFromClues(item.name, kind, fillings),
         kind,
@@ -185,7 +224,12 @@ export function groupsFromIdentity(options: {
       name: nameFromClues(options.mealName, kind, fillings),
       kind,
       fillings,
-      pieces: parsePieceCount(blob, 0),
+      pieces: resolveSushiPieceCount({
+        name: options.mealName,
+        notes: blob,
+        kind,
+        size: options.items[0]?.size,
+      }),
       notes: options.lookClues ?? "sushi seen in photo",
     },
   ];
@@ -215,16 +259,21 @@ export function foodItemsFromSushiGroups(
     const pieces =
       group.kind === "side" || group.kind === "chirashi"
         ? Math.max(group.pieces, 1)
-        : group.pieces > 0
-          ? group.pieces
-          : defaultPiecesForSize(fallbackSize, group.kind);
-    const counted = group.pieces > 0;
+        : resolveSushiPieceCount({
+            name: group.name,
+            notes: group.notes,
+            kind: group.kind,
+            reported: group.pieces,
+            size: fallbackSize,
+          });
+    const counted = group.pieces >= 3;
+    const label = piece.name.replace(/, 1 piece$/i, "").replace(/ piece$/i, "");
     return {
-      name: piece.name.replace(/, 1 piece$/i, "").replace(/ piece$/i, ""),
+      name: `${label} (${pieces} ${pieceWord(pieces)})`,
       notes: [
         counted
-          ? `Counted ${pieces} ${pieceWord(pieces)}.`
-          : `Fillings were unclear, so assumed ${pieces} pieces for a ${SIZE_LABEL[fallbackSize].toLowerCase()} plate.`,
+          ? `Counted ${pieces} ${pieceWord(pieces)} × ${piece.calories} kcal each.`
+          : `A cut roll is ${pieces} pieces × ${piece.calories} kcal each (not 1 piece).`,
         group.fillings.length ? `Seen: ${group.fillings.join(", ")}.` : "Could not read every filling.",
         group.notes,
       ]
@@ -251,11 +300,16 @@ export function applySushiCalories(item: FoodItem): FoodItem | null {
   const fillings = inferFillings(`${item.name} ${item.notes} ${item.portionDescription}`);
   const kind = inferKind(`${item.name} ${item.notes}`, fillings);
   const piece = matchSushiPiece(item.name, fillings, kind);
-  const pieces =
-    parsePieceCount(`${item.name} ${item.portionDescription} ${item.notes}`, 0) ||
-    (item.estimatedGrams > 20 && piece.grams > 0
-      ? Math.max(1, Math.round(item.estimatedGrams / piece.grams))
-      : 0);
+  const pieces = resolveSushiPieceCount({
+    name: item.name,
+    notes: `${item.portionDescription} ${item.notes}`,
+    kind,
+    reported:
+      parsePieceCount(`${item.name} ${item.portionDescription} ${item.notes}`, 0) ||
+      (item.estimatedGrams > 20 && piece.grams > 0
+        ? Math.max(1, Math.round(item.estimatedGrams / piece.grams))
+        : 0),
+  });
   if (!pieces) return null;
   return {
     ...item,
@@ -348,7 +402,8 @@ export function inferKind(text: string, fillings: string[]): SushiKind {
 
 export const SUSHI_INSPECT_PROMPT = `This photo is sushi. Do a close look. Do not invent calories.
 
-Split the plate into every distinct group. Count pieces in each group.
+Split the plate into every distinct group. Count bite-size slices, NOT the number of rolls.
+A cut dragon / California / rainbow / spicy tuna roll is usually 6–8 slices. If you see one cut roll, set pieces to the slice count (often 7 or 8). Never set pieces to 1 for a cut roll unless only one slice is on the plate.
 
 Kind:
 - nigiri = oval rice with a slice of fish on top
@@ -372,10 +427,10 @@ Color / filling guide (use only if you see it):
 - fried crunch = tempura
 
 Never collapse a mixed platter into one word "sushi".
-If a filling is unclear, still count the pieces and set fillings to ["unknown"].
+If a filling is unclear, still count the slices and set fillings to ["unknown"].
 
 Return JSON only:
-{"totalPieces":0,"groups":[{"name":"salmon nigiri","kind":"nigiri","fillings":["salmon","rice"],"pieces":4,"notes":"orange fish on rice ovals"}]}`;
+{"totalPieces":8,"groups":[{"name":"dragon roll","kind":"uramaki","fillings":["eel","avocado"],"pieces":8,"notes":"one cut roll, 8 slices"}]}`;
 
 function nameFromClues(name: string, kind: SushiKind, fillings: string[]) {
   const cleaned = name.replace(/\bsushi\b/i, "").trim();
@@ -408,10 +463,12 @@ function groupFromUnknown(row: unknown): SushiGroup | null {
     : inferFillings(`${name} ${notes}`);
   const kind = parseKind(value.kind) || inferKind(`${name} ${notes}`, fillings);
   if (!name && fillings.length === 0 && kind === "unknown") return null;
-  const pieces = Math.max(
-    0,
-    Math.min(48, Number(value.pieces ?? value.pieceCount ?? parsePieceCount(`${name} ${notes}`, 0))),
-  );
+  const pieces = resolveSushiPieceCount({
+    name,
+    notes,
+    kind,
+    reported: Number(value.pieces ?? value.pieceCount ?? value.slices ?? value.count ?? 0),
+  });
   return {
     name: nameFromClues(name || "Sushi", kind, fillings),
     kind,

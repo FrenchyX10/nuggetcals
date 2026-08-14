@@ -17,7 +17,7 @@ import {
   stripSizeWords,
   type PortionSize,
 } from "@/lib/portion-size";
-import { parsePieceCount } from "@/lib/sushi";
+import { looksLikeSushi, parsePieceCount, resolveSushiPieceCount } from "@/lib/sushi";
 import { parseFamilyCount, shouldMultiplyByCount } from "@/lib/food-families";
 
 export function refineMealWithPublishedNutrition(
@@ -44,9 +44,16 @@ export function refineMealWithPublishedNutrition(
       chain,
       size,
     );
-    const pieces =
-      parsePieceCount(`${item.name} ${item.portionDescription} ${item.notes}`, 0) ||
-      parseFamilyCount(`${item.name} ${item.portionDescription} ${item.notes}`, 0);
+    const pieces = looksLikeSushi(item.name, item.notes, item.portionDescription)
+      ? resolveSushiPieceCount({
+          name: item.name,
+          notes: `${item.portionDescription} ${item.notes}`,
+          reported:
+            parsePieceCount(`${item.name} ${item.portionDescription} ${item.notes}`, 0) ||
+            parseFamilyCount(`${item.name} ${item.portionDescription} ${item.notes}`, 0),
+        })
+      : parsePieceCount(`${item.name} ${item.portionDescription} ${item.notes}`, 0) ||
+        parseFamilyCount(`${item.name} ${item.portionDescription} ${item.notes}`, 0);
     if (!match) {
       return {
         ...item,

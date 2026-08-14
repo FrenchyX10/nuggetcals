@@ -7,6 +7,7 @@ import {
   looksLikeSushi,
   matchSushiPiece,
   parsePieceCount,
+  resolveSushiPieceCount,
 } from "@/lib/sushi";
 import {
   detectFoodFamily,
@@ -201,9 +202,16 @@ async function enrichItem(
 ): Promise<FoodItem> {
   if (item.dataSource === "restaurant_official" && item.calories > 0) return item;
 
-  const pieces =
-    parsePieceCount(`${item.name} ${item.portionDescription} ${item.notes}`, 0) ||
-    parseFamilyCount(`${item.name} ${item.portionDescription} ${item.notes}`, 0);
+  const pieces = looksLikeSushi(item.name, item.notes, item.portionDescription)
+    ? resolveSushiPieceCount({
+        name: item.name,
+        notes: `${item.portionDescription} ${item.notes}`,
+        reported:
+          parsePieceCount(`${item.name} ${item.portionDescription} ${item.notes}`, 0) ||
+          parseFamilyCount(`${item.name} ${item.portionDescription} ${item.notes}`, 0),
+      })
+    : parsePieceCount(`${item.name} ${item.portionDescription} ${item.notes}`, 0) ||
+      parseFamilyCount(`${item.name} ${item.portionDescription} ${item.notes}`, 0);
   const family = detectFoodFamily(item.name, item.notes, item.portionDescription);
   const query = [
     restaurant,

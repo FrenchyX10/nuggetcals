@@ -71,7 +71,7 @@ export const FOODS: FoodRecord[] = [
   f("Philadelphia roll piece", null, ["philly roll", "salmon cream cheese roll"], 48, 2.2, 5, 2.2, 0.2, 0.8, 110, 26, "1 piece"),
   f("Shrimp tempura roll piece", null, ["shrimp tempura roll"], 58, 2.2, 6.2, 2.8, 0.2, 0.8, 140, 28, "1 piece"),
   f("Rainbow roll piece", null, ["rainbow roll"], 50, 2.6, 5.5, 1.8, 0.3, 0.8, 120, 26, "1 piece"),
-  f("Dragon roll piece", null, ["dragon roll"], 55, 2.2, 6, 2.4, 0.3, 1.4, 150, 28, "1 piece"),
+  f("Dragon roll piece", null, ["dragon roll", "eel avocado roll"], 55, 2.2, 6, 2.4, 0.3, 1.4, 150, 28, "1 piece"),
   f("Mixed sushi piece", null, ["sushi platter", "assorted sushi"], 45, 3.2, 5.2, 1.3, 0.2, 0.7, 100, 24, "1 mixed piece"),
   f("California roll (8 pieces)", null, ["california roll 8"], 255, 9, 38, 7, 3, 5, 520, 180, "8 pieces"),
   f("Spicy tuna roll (8 pieces)", null, ["spicy tuna 8"], 290, 16, 38, 8, 2, 4, 640, 180, "8 pieces"),
