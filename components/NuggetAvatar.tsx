@@ -43,9 +43,9 @@ function FaceMark({ face, hideEyes = false }: { face: string; hideEyes?: boolean
   if (face === "boom") {
     return (
       <>
-        <path d="M-16-10 L-8-2 M-8-10 L-16-2" stroke="#3a2414" strokeWidth="2.2" />
-        <path d="M8-10 L16-2 M16-10 L8-2" stroke="#3a2414" strokeWidth="2.2" />
-        <path d="M-7 8 Q0 3 7 8" fill="none" stroke="#3a2414" strokeWidth="2" />
+        <path d="M-16-10 L-8-2 M-8-10 L-16-2" stroke="#1c100a" strokeWidth="2.2" />
+        <path d="M8-10 L16-2 M16-10 L8-2" stroke="#1c100a" strokeWidth="2.2" />
+        <path d="M-7 8 Q0 3 7 8" fill="none" stroke="#1c100a" strokeWidth="2" />
       </>
     );
   }
@@ -72,7 +72,7 @@ function FaceMark({ face, hideEyes = false }: { face: string; hideEyes?: boolean
             <rect x="-5" y="-6" width="10" height="2.4" />
           </>
         )}
-        <path d="M-8 9 Q0 15 8 9" fill="none" stroke="#3a2414" strokeWidth="2" />
+        <path d="M-8 9 Q0 15 8 9" fill="none" stroke="#1c100a" strokeWidth="2" />
       </>
     );
   }
@@ -81,8 +81,8 @@ function FaceMark({ face, hideEyes = false }: { face: string; hideEyes?: boolean
       <>
         {hideEyes ? null : (
           <>
-            <path d="M-20-4 Q-13-9 -6-4" fill="none" stroke="#3a2414" strokeWidth="2.2" />
-            <path d="M6-4 Q13-9 20-4" fill="none" stroke="#3a2414" strokeWidth="2.2" />
+            <path d="M-20-4 Q-13-9 -6-4" fill="none" stroke="#1c100a" strokeWidth="2.2" />
+            <path d="M6-4 Q13-9 20-4" fill="none" stroke="#1c100a" strokeWidth="2.2" />
           </>
         )}
         <ellipse className="nug-mouth" cx="0" cy="11" rx="3.2" ry="1.8" />
@@ -94,7 +94,7 @@ function FaceMark({ face, hideEyes = false }: { face: string; hideEyes?: boolean
       <>
         {hideEyes ? null : <ellipse className="nug-eye" cx="-12" cy="-4" rx="4.2" ry="5.2" />}
         {hideEyes ? null : (
-          <path d="M7-4 Q14-9 21-4" fill="none" stroke="#3a2414" strokeWidth="2.2" />
+          <path d="M7-4 Q14-9 21-4" fill="none" stroke="#1c100a" strokeWidth="2.2" />
         )}
         <ellipse className="nug-mouth" cx="1" cy="10" rx="5" ry="3.2" />
       </>

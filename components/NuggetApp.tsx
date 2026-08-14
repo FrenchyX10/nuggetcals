@@ -151,14 +151,11 @@ export function NuggetApp() {
             scale={scale}
             exploded={exploded}
           />
-          <p className="nug-mood">{moodLine}</p>
+          <p className="nug-mood hide-mobile">{moodLine}</p>
           <p className="nug-kcal">
-            {kcal(todayCalories)} / {kcal(planCalories)} kcal
-            {remaining >= 0
-              ? ` · ${kcal(remaining)} left`
-              : ` · ${kcal(Math.abs(remaining))} over`}
+            {kcal(todayCalories)} / {kcal(planCalories)}
           </p>
-          <p className="hint">
+          <p className="hint hide-mobile">
             <a href="/codes">Have a code? Redeem it</a>
           </p>
           {exploded ? (

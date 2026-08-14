@@ -1391,17 +1391,18 @@ video {
 }
 
 .nug-face-g {
-  fill: #3a2414;
+  fill: #1c100a;
 }
 
 .nug-eye {
   transform-box: fill-box;
   transform-origin: center;
   animation: nug-blink 4.2s infinite;
+  fill: #1c100a;
 }
 
 .nug-mouth {
-  fill: #5a2a24;
+  fill: #2a160e;
 }
 
 .nug-heart {
@@ -1589,13 +1590,61 @@ video {
 }
 
 @media (max-width: 860px) {
-  .nug-grid {
-    grid-template-columns: 1fr 1fr;
+  .nug-page {
+    gap: 14px;
+    padding-bottom: 8px;
+  }
+
+  .nug-hero {
+    padding: 12px 10px 14px;
+    border-radius: 20px;
+    gap: 0;
+  }
+
+  .nug-topstats {
+    width: 100%;
+    justify-content: space-between;
+    margin-bottom: 4px;
   }
 
   .nug-stage {
-    width: min(260px, 78vw);
-    height: min(260px, 78vw);
+    width: min(92vw, 420px);
+    height: min(92vw, 420px);
+    margin: 0;
+  }
+
+  .nug-bob {
+    width: 100%;
+  }
+
+  .nug-kcal {
+    margin: 6px 0 8px;
+    font-size: 0.95rem;
+  }
+
+  .nug-collect {
+    width: 100%;
+    max-width: none;
+    margin-top: 8px;
+  }
+
+  .nug-shop {
+    padding: 0 0 24px;
+  }
+
+  .nug-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .nug-sku {
+    min-height: 72px;
+    padding: 10px;
+    gap: 2px;
+  }
+
+  .nug-sku small {
+    display: none;
   }
 
   .nug-trybar {
@@ -1606,10 +1655,6 @@ video {
 
   .nug-trybar > div {
     grid-column: 1 / -1;
-  }
-
-  .nug-page {
-    padding-bottom: 12px;
   }
 }
 

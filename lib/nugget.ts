@@ -129,7 +129,7 @@ export function nuggetMood(todayCalories: number, planCalories: number) {
 
 export function nuggetScale(todayCalories: number, planCalories: number) {
   const share = Math.min(1.15, todayCalories / Math.max(planCalories, 1));
-  return 0.58 + share * 0.72;
+  return 0.84 + share * 0.28;
 }
 
 export function canCollect(save: NuggetSave, todayCalories: number, planCalories: number) {
