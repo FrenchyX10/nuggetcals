@@ -278,6 +278,12 @@ function hintAdjustment(
   if (wantsIndian && isIndian) extra += 0.5;
   if (wantsMexican && isMexican) extra += 0.45;
   if (wantsMed && isMed) extra += 0.5;
+  const wantsTexan = /\b(brisket|chicken fried steak|kolache|texas|bbq|ribs)\b/.test(combined);
+  const isTexan = /\b(brisket|chicken fried steak|kolache|ribs|pulled pork)\b/.test(blob);
+  const wantsCali = /\b(california burrito|avocado toast|acai|cioppino|californian)\b/.test(combined);
+  const isCali = /\b(california burrito|avocado toast|acai|cioppino|grain bowl)\b/.test(blob);
+  if (wantsTexan && isTexan) extra += 0.5;
+  if (wantsCali && isCali) extra += 0.5;
   return extra;
 }
 

@@ -22,7 +22,10 @@ export type FoodFamily =
   | "nachos"
   | "indian"
   | "mexican"
-  | "mediterranean";
+  | "mediterranean"
+  | "texmex"
+  | "texan"
+  | "california";
 
 export type FamilyGroup = {
   name: string;
@@ -56,6 +59,18 @@ const FAMILY_MATCH: Array<[FoodFamily, RegExp]> = [
   ["taco", /\b(tacos?|taquitos?|birria)\b/],
   ["nachos", /\b(nachos?|quesadilla)\b/],
   ["burrito", /\b(burritos?)\b/],
+  [
+    "texmex",
+    /\b(tex-?mex|tex mex|chili con carne|chile con queso|queso|frito pie|taco salad|puffy taco|combo plate|chili cheese)\b/,
+  ],
+  [
+    "texan",
+    /\b(brisket|burnt ends|chicken fried steak|chicken fried chicken|kolaches?|texas toast|pecan pie|hot links|smoked sausage|pulled pork|pork ribs|beef ribs|bbq plate|texan|texas bbq|barbecue plate)\b/,
+  ],
+  [
+    "california",
+    /\b(california burrito|acai|açaí|avocado toast|cioppino|sourdough|turkey avocado|kale salad|smoothie bowl|grain bowl|californian|california food|mission-style)\b/,
+  ],
   [
     "mexican",
     /\b(enchiladas?|fajitas?|tamales?|tostadas?|chimichanga|chile relleno|mole|elote|flautas?|carne asada|pozole|horchata|mexican)\b/,
@@ -262,6 +277,43 @@ export const FAMILY_VARIANTS: FamilyVariant[] = [
   v("Huevos rancheros", "mexican", ["huevos rancheros"], 480, 22, 36, 26, 6, 4, 980, 320, "plate", false),
   v("Pozole", "mexican", ["pozole"], 380, 22, 36, 12, 6, 4, 1100, 420, "bowl", false),
 
+  v("Chili con carne", "texmex", ["chili", "texas chili", "bowl of chili"], 380, 24, 22, 20, 6, 6, 980, 340, "bowl", false),
+  v("Chile con queso", "texmex", ["queso", "cheese dip"], 280, 12, 12, 20, 1, 3, 720, 180, "bowl", false),
+  v("Chili cheese nachos", "texmex", ["chili nachos", "chili cheese nachos"], 780, 26, 68, 42, 8, 6, 1400, 320, "plate", false),
+  v("Taco salad", "texmex", ["taco salad"], 620, 28, 48, 34, 8, 6, 1200, 380, "bowl", false),
+  v("Frito pie", "texmex", ["frito pie", "walking taco"], 520, 18, 48, 28, 6, 4, 980, 280, "bowl", false),
+  v("Tex-Mex combo plate", "texmex", ["combo plate", "enchilada combo"], 860, 38, 78, 40, 10, 8, 1800, 520, "plate", false),
+  v("Sour cream chicken enchilada", "texmex", ["sour cream enchilada"], 280, 16, 20, 16, 2, 3, 680, 160, "piece", true),
+  v("Puffy taco", "texmex", ["puffy taco"], 240, 12, 18, 13, 2, 1, 420, 110, "taco", true),
+  v("Beef fajitas", "texmex", ["tex mex fajitas"], 600, 40, 34, 28, 6, 6, 1500, 400, "plate", false),
+
+  v("Sliced brisket plate", "texan", ["brisket", "beef brisket", "bbq brisket"], 620, 48, 12, 40, 1, 8, 980, 280, "plate", false),
+  v("Brisket sandwich", "texan", ["brisket sandwich"], 680, 42, 48, 32, 2, 10, 1400, 320, "sandwich", false),
+  v("Pork ribs", "texan", ["pork ribs", "spare ribs", "st louis ribs"], 680, 42, 16, 48, 0, 12, 980, 320, "plate", false),
+  v("Beef ribs", "texan", ["beef ribs", "dino ribs"], 820, 52, 8, 62, 0, 6, 1100, 380, "plate", false),
+  v("Pulled pork plate", "texan", ["pulled pork", "chopped pork"], 580, 40, 20, 34, 1, 14, 1200, 300, "plate", false),
+  v("Smoked sausage", "texan", ["hot links", "bbq sausage"], 420, 18, 4, 36, 0, 2, 1100, 160, "piece", false),
+  v("Burnt ends", "texan", ["burnt ends"], 540, 36, 12, 38, 0, 10, 980, 220, "plate", false),
+  v("Chicken fried steak", "texan", ["chicken fried steak", "cfs"], 760, 38, 48, 44, 2, 4, 1600, 360, "plate", false),
+  v("Chicken fried chicken", "texan", ["chicken fried chicken"], 680, 42, 42, 36, 2, 4, 1400, 340, "plate", false),
+  v("BBQ plate", "texan", ["bbq plate", "barbecue plate", "two meat plate"], 920, 58, 28, 58, 2, 16, 1800, 480, "plate", false),
+  v("Texas toast", "texan", ["texas toast"], 180, 4, 22, 8, 1, 2, 280, 50, "piece", true),
+  v("Kolache", "texan", ["kolache", "klobasnek"], 280, 10, 32, 12, 1, 6, 520, 90, "piece", true),
+  v("Pecan pie slice", "texan", ["pecan pie"], 500, 6, 64, 26, 2, 34, 260, 130, "slice", true),
+  v("BBQ baked beans", "texan", ["baked beans"], 220, 8, 38, 4, 6, 16, 620, 180, "side", false),
+
+  v("California burrito", "california", ["cali burrito", "california burrito"], 880, 42, 82, 38, 8, 6, 1680, 480, "burrito", false),
+  v("Avocado toast", "california", ["avocado toast"], 350, 8, 32, 22, 8, 2, 420, 160, "piece", false),
+  v("Acai bowl", "california", ["acai", "açaí bowl", "smoothie bowl"], 420, 8, 72, 12, 10, 42, 120, 380, "bowl", false),
+  v("Turkey avocado sandwich", "california", ["turkey avocado"], 480, 32, 40, 20, 6, 6, 1100, 240, "sandwich", false),
+  v("Chicken avocado cobb", "california", ["california cobb"], 560, 38, 18, 36, 6, 6, 1100, 360, "bowl", false),
+  v("Kale salad", "california", ["kale salad", "kale caesar"], 320, 12, 24, 20, 6, 6, 620, 260, "bowl", false),
+  v("Grain bowl", "california", ["grain bowl", "farro bowl", "quinoa bowl"], 540, 22, 62, 20, 10, 8, 780, 420, "bowl", false),
+  v("Cioppino", "california", ["cioppino"], 380, 36, 18, 14, 3, 6, 980, 420, "bowl", false),
+  v("Sourdough grilled cheese", "california", ["sourdough grilled cheese"], 460, 18, 38, 26, 2, 6, 920, 160, "sandwich", false),
+  v("Fish taco California", "california", ["baja fish taco", "california fish taco"], 230, 12, 22, 10, 2, 2, 380, 120, "taco", true),
+  v("Chicken avocado wrap", "california", ["avocado wrap"], 480, 28, 44, 20, 8, 4, 980, 260, "sandwich", false),
+
   v("Chicken gyro", "mediterranean", ["gyro", "chicken gyro"], 620, 34, 52, 28, 4, 6, 1400, 320, "sandwich", false),
   v("Lamb gyro", "mediterranean", ["lamb gyro"], 680, 32, 50, 34, 4, 6, 1500, 330, "sandwich", false),
   v("Chicken shawarma plate", "mediterranean", ["shawarma", "chicken shawarma"], 640, 38, 48, 28, 6, 6, 1400, 420, "plate", false),
@@ -368,6 +420,12 @@ const FAMILY_GUIDE: Record<FoodFamily, string> = {
     "Name the exact dish: chicken tikka masala (orange creamy), butter chicken (similar, slightly sweeter), chicken/lamb curry, vindaloo (darker, spicier), korma (pale creamy), tandoori (red dry grilled), biryani (rice mixed through), palak/saag paneer (green, cheese cubes), chana masala (chickpeas), dal (lentils), dosa (crispy crepe), samosa (fried triangle). Count samosas, naan, and roti. Naan or rice on the side is its own group. Never answer only “Indian food” or “curry”.",
   mexican:
     "Name the exact dish: tacos (already split by protein), burrito, enchiladas (count them), fajitas (sizzling peppers + meat), tamales (count), chile relleno, chimichanga (fried burrito), tostada, carne asada plate, mole, elote/street corn, huevos rancheros, pozole, quesadilla, nachos. Count enchiladas, tamales, tacos, and tostadas. Rice and beans if visible are extras. Never answer only “Mexican food”.",
+  texmex:
+    "Name the exact Tex-Mex dish: chili con carne, chile con queso, chili cheese nachos, taco salad (fried shell bowl), Frito pie, combo plate (enchilada + taco + rice/beans), sour cream chicken enchilada, puffy taco, Tex-Mex fajitas. Count tacos, enchiladas, and puffy tacos. Queso or rice/beans on the side is its own group. Never answer only “Tex-Mex” or “Mexican”.",
+  texan:
+    "Name the exact Texas dish: sliced brisket plate vs brisket sandwich, pork ribs vs beef ribs, pulled pork, smoked sausage/hot links, burnt ends, chicken fried steak (breaded beef + cream gravy — not fried chicken), chicken fried chicken, BBQ two-meat plate, Texas toast, kolache, pecan pie. Count toast slices, kolaches, and rib bones if you can. Beans or toast on the side is its own group. Never answer only “BBQ” or “Texas food”.",
+  california:
+    "Name the exact California dish: California burrito (carne asada + fries + cheese + guacamole inside), avocado toast, acai/smoothie bowl, turkey avocado sandwich, kale salad, grain/farro/quinoa bowl, cioppino (tomato seafood stew), sourdough grilled cheese, Baja/California fish taco, chicken avocado wrap. Count fish tacos and toast slices. Fries inside a burrito are part of the burrito, not a side. Never answer only “California food” or “healthy bowl”.",
   mediterranean:
     "Name the exact dish: chicken vs lamb gyro, shawarma plate, falafel wrap vs falafel balls (count balls), hummus with pita, chicken vs lamb kebab (count skewers), souvlaki, moussaka, tabbouleh, baba ganoush, dolma (count), Greek salad, pita. Never answer only “Mediterranean” or “Greek food”.",
   steak:
@@ -693,6 +751,10 @@ function inferToppings(text: string, family: FoodFamily): string[] {
   add("lobster", /\blobster\b/);
   add("tuna", /\btuna|ahi\b/);
   add("octopus", /\boctopus\b/);
+  add("brisket", /\bbrisket\b/);
+  add("queso", /\bqueso\b/);
+  add("chili", /\bchili\b/);
+  add("avocado", /\bavocado\b/);
   if (family === "pizza" && found.length === 0 && /\bcheese\b/.test(raw)) found.push("cheese");
   return found;
 }
@@ -732,7 +794,14 @@ function resolvedCount(group: FamilyGroup, variant: FamilyVariant, size: Portion
   if (variant.unit === "piece" && variant.family === "indian") {
     return size === "small" ? 1 : size === "large" ? 3 : 2;
   }
-  if (variant.unit === "piece" && (variant.family === "mexican" || variant.family === "mediterranean")) {
+  if (
+    variant.unit === "piece" &&
+    (variant.family === "mexican" ||
+      variant.family === "mediterranean" ||
+      variant.family === "texmex" ||
+      variant.family === "texan" ||
+      variant.family === "california")
+  ) {
     return size === "small" ? 2 : size === "large" ? 4 : 3;
   }
   if (variant.unit === "piece" && variant.family === "asian") {

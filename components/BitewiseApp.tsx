@@ -66,6 +66,9 @@ const DISH_HINTS = [
   "Curry",
   "Gyro",
   "Salmon",
+  "Brisket",
+  "Tex-Mex",
+  "Avocado toast",
 ];
 
 const ANALYZE_STEPS = [

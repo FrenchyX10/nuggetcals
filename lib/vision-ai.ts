@@ -43,7 +43,7 @@ Hard disambiguation:
 - Burger = bun + patty. No bun = not a burger. Chicken in a bun = chicken sandwich, not a hamburger.
 - Pizza = triangular slice or round pie with toppings, not a quesadilla unless folded.
 - Sushi is not one food. Split nigiri, sashimi, and each roll type. Count pieces. Name visible fish/fillings (salmon = orange, tuna = deep red, eel = brown glaze, avocado/cucumber = green, crab = white shreds). Never answer only "sushi".
-- Never answer only pizza, burger, chicken, pasta, salad, taco, sandwich, bowl, Asian, Indian, Mexican, Mediterranean, or seafood. Name the exact dish (tikka masala vs biryani, enchilada vs fajita, gyro vs falafel, salmon vs shrimp scampi, pad Thai vs ramen) and count slices / tacos / samosas / dumplings / kebabs / shrimp.
+- Never answer only pizza, burger, chicken, pasta, salad, taco, sandwich, bowl, Asian, Indian, Mexican, Tex-Mex, Texan, Californian, Mediterranean, or seafood. Name the exact dish (tikka masala vs biryani, enchilada vs fajita, brisket vs chicken fried steak, California burrito vs taco, gyro vs falafel, salmon vs shrimp scampi, pad Thai vs ramen) and count slices / tacos / samosas / dumplings / kebabs / shrimp.
 - Do not add fries, drinks, or sides unless they are clearly in the photo.
 
 Size from what you see (small / medium / large):
@@ -440,7 +440,7 @@ Quarter detector: ${quarterFound ? "possible quarter in the photo" : "no quarter
 If the photo shows a stack of round cakes or syrup/berries, name pancakes or waffles, even if the on-device guess says chicken.
 If you see a bun and a patty, it is a burger or sandwich, not loose fried chicken.
 If this is sushi, do not return one item named sushi. One items[] row per type (salmon nigiri, tuna nigiri, dragon roll, …). For a cut roll, pieces = bite-size slices (usually 6–8), not 1.
-If this is pizza, burger, chicken, pasta, salad, tacos, sandwich, wings, pancakes, Indian, Mexican, Mediterranean, Asian, or seafood, name the exact dish and count units. Never return only “curry”, “Mexican food”, or “seafood”.
+If this is pizza, burger, chicken, pasta, salad, tacos, sandwich, wings, pancakes, Indian, Mexican, Tex-Mex, Texan, Californian, Mediterranean, Asian, or seafood, name the exact dish and count units. Never return only “curry”, “Mexican food”, “BBQ”, or “seafood”.
 
 Return only this JSON:
 {"isFood":true,"notFoodReason":null,"mealName":"short specific name","lookClues":"shape, surface, extras","size":"medium","sizeReason":"visible scale clues","quarterVisible":false,"items":[{"name":"specific food name","size":"medium","pieces":0,"fillings":[],"notes":"what you see","estimatedGrams":180}]}`;
