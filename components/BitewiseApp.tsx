@@ -29,7 +29,6 @@ import {
   SIZE_LABEL,
   type PortionSize,
 } from "@/lib/portion-size";
-import { claimSecretRestaurantCode } from "@/lib/nugget";
 
 const RESTAURANTS = [
   "Chipotle",
@@ -95,7 +94,6 @@ export function BitewiseApp() {
   const [keyDraft, setKeyDraft] = useState("");
   const [savingKey, setSavingKey] = useState(false);
   const [sizeHint, setSizeHint] = useState<PortionSize | "">("");
-  const [secretNote, setSecretNote] = useState<string | null>(null);
 
   useEffect(() => {
     setHistory(loadHistory());
@@ -498,17 +496,9 @@ export function BitewiseApp() {
 
             <RestaurantPicker
               restaurant={restaurant}
-              onRestaurant={(value) => {
-                setRestaurant(value);
-                const prize = claimSecretRestaurantCode(value);
-                if (prize && prize.nugs > 0) {
-                  setSecretNote(prize.message);
-                  window.setTimeout(() => setSecretNote(null), 3200);
-                }
-              }}
+              onRestaurant={setRestaurant}
               onPickItem={pickMenuItem}
             />
-            {secretNote ? <p className="nug-toast">{secretNote}</p> : null}
 
             <div className="chips resto-chips" aria-label="Restaurant shortcuts">
               {RESTAURANTS.map((name) => (

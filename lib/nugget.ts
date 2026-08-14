@@ -124,21 +124,29 @@ const SECRET_CODES: Record<string, { nugs: number; message: string }> = {
   },
 };
 
-export function claimSecretRestaurantCode(
-  restaurant: string,
-): { nugs: number; message: string } | null {
-  const code = restaurant.trim().toLowerCase().replace(/\s+/g, "");
-  const prize = SECRET_CODES[code];
-  if (!prize) return null;
+export type RedeemResult = {
+  ok: boolean;
+  nugs: number;
+  total: number;
+  message: string;
+};
+
+export function redeemCode(raw: string): RedeemResult {
+  const code = raw.trim().toLowerCase().replace(/\s+/g, "");
   const save = loadNugget();
-  if (save.claimedCodes.includes(code)) return { nugs: 0, message: "You already claimed that secret." };
+  if (!code) return { ok: false, nugs: 0, total: save.nugs, message: "Type a code first." };
+  const prize = SECRET_CODES[code];
+  if (!prize) return { ok: false, nugs: 0, total: save.nugs, message: "That code is not valid." };
+  if (save.claimedCodes.includes(code)) {
+    return { ok: false, nugs: 0, total: save.nugs, message: "You already redeemed that code." };
+  }
   const next: NuggetSave = {
     ...save,
     nugs: save.nugs + prize.nugs,
     claimedCodes: [...save.claimedCodes, code],
   };
   saveNugget(next);
-  return prize;
+  return { ok: true, nugs: prize.nugs, total: next.nugs, message: prize.message };
 }
 
 export function collectDailyNugs(save: NuggetSave): NuggetSave {

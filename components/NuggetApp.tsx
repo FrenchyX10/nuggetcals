@@ -132,6 +132,9 @@ export function NuggetApp() {
               ? ` · ${kcal(remaining)} left`
               : ` · ${kcal(Math.abs(remaining))} over`}
           </p>
+          <p className="hint">
+            <a href="/codes">Have a code? Redeem it</a>
+          </p>
           {exploded ? (
             <p className="nug-warn">No Nugs today. Tomorrow is a fresh fryer.</p>
           ) : collectible ? (
