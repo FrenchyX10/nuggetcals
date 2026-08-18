@@ -114,8 +114,6 @@ export function BitewiseApp({ embedded = false }: { embedded?: boolean } = {}) {
   const [planCalories, setPlanCalories] = useState(2000);
   const [groqKey, setGroqKey] = useState("");
   const [geminiKey, setGeminiKey] = useState("");
-  const [keyDraft, setKeyDraft] = useState("");
-  const [savingKey, setSavingKey] = useState(false);
   const [serverReady, setServerReady] = useState(false);
   const [sizeHint, setSizeHint] = useState<PortionSize | "">("");
   const [code, setCode] = useState("");
@@ -152,34 +150,6 @@ export function BitewiseApp({ embedded = false }: { embedded?: boolean } = {}) {
   const scale = activeEntry?.servings ?? servings;
   const visionReady = serverReady || Boolean(groqKey) || Boolean(geminiKey);
 
-  async function saveGroqKey() {
-    const value = keyDraft.trim();
-    if (value.length < 20) {
-      setError("Paste the full API key.");
-      return;
-    }
-    const isGemini = value.startsWith("AIza") || !value.startsWith("gsk_");
-    setSavingKey(true);
-    setError(null);
-    try {
-      if (isGemini) {
-        window.localStorage.setItem(GEMINI_KEY, value);
-        setGeminiKey(value);
-      } else {
-        window.localStorage.setItem(GROQ_KEY, value);
-        setGroqKey(value);
-      }
-      setKeyDraft("");
-      await fetch("/api/setup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(isGemini ? { geminiKey: value } : { groqKey: value }),
-      }).catch(() => null);
-    } finally {
-      setSavingKey(false);
-    }
-  }
-
   function choosePlan(id: string, calories: number) {
     setPlanId(id);
     setPlanCalories(calories);
@@ -204,8 +174,9 @@ export function BitewiseApp({ embedded = false }: { embedded?: boolean } = {}) {
   }
 
   async function analyze() {
-    if (!imageBase64 || !thumbnail || !previewUrl) {
-      setError("Add a photo of the meal first.");
+    const typed = [dishHint.trim(), sizeHint].filter(Boolean).join(" ");
+    if (!imageBase64 && !dishHint.trim()) {
+      setError("Snap a photo, or type what you ate (and the restaurant if you know it).");
       return;
     }
 
@@ -216,66 +187,70 @@ export function BitewiseApp({ embedded = false }: { embedded?: boolean } = {}) {
     setStep(0);
 
     try {
-      const localSight = inspectMealPhoto(
-        previewUrl,
-        restaurant.trim(),
-        dishHint.trim(),
-      ).catch(() => null);
-      const quarter = await detectQuarterScale(previewUrl);
       let nextMeal: MealAnalysis | null = null;
 
-      if (visionReady) {
-        const [response, sight] = await Promise.all([
-          fetch("/api/analyze", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              imageBase64,
-              restaurant: restaurant.trim(),
-              dishHint: dishHint.trim(),
-              sizeHint,
-              groqKey: groqKey || undefined,
-              geminiKey: geminiKey || undefined,
-              quarterFound: quarter.found,
-              identifyOnly: true,
-              localGuess: (await localSight)?.caption ?? "",
-            }),
-          }),
-          localSight,
-        ]);
-        const data = (await response.json()) as
-          | { meal: MealAnalysis }
-          | { error: string; message?: string };
-        if (response.ok && "meal" in data) {
-          nextMeal = data.meal;
-          if (sight) {
-            nextMeal = applyLocalIdentityGuard(
-              nextMeal,
-              sight,
-              restaurant.trim(),
-              dishHint.trim(),
-            );
+      if (imageBase64 && thumbnail && previewUrl) {
+        const localSight = inspectMealPhoto(
+          previewUrl,
+          restaurant.trim(),
+          dishHint.trim(),
+        ).catch(() => null);
+        const quarter = await detectQuarterScale(previewUrl);
+
+        if (visionReady) {
+          try {
+            const [response, sight] = await Promise.all([
+              fetch("/api/analyze", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  imageBase64,
+                  restaurant: restaurant.trim(),
+                  dishHint: dishHint.trim(),
+                  sizeHint,
+                  groqKey: groqKey || undefined,
+                  geminiKey: geminiKey || undefined,
+                  quarterFound: quarter.found,
+                  identifyOnly: true,
+                  localGuess: (await localSight)?.caption ?? "",
+                }),
+              }),
+              localSight,
+            ]);
+            const data = (await response.json()) as
+              | { meal: MealAnalysis }
+              | { error: string; message?: string };
+            if (response.ok && "meal" in data) {
+              nextMeal = data.meal;
+              if (sight) {
+                nextMeal = applyLocalIdentityGuard(
+                  nextMeal,
+                  sight,
+                  restaurant.trim(),
+                  dishHint.trim(),
+                );
+              }
+            }
+          } catch {
+            nextMeal = null;
           }
-        } else {
-          throw new Error(
-            "error" in data
-              ? data.message || data.error
-              : "Vision analysis failed.",
+        }
+
+        if (!nextMeal) {
+          const sight = await localSight;
+          nextMeal = analyzeFree(
+            sight?.labels ?? [],
+            restaurant.trim(),
+            typed,
+            {
+              caption: sight?.caption,
+              portionGrams: sight?.portionGrams,
+              quarterFound: Boolean(sight?.quarterFound || quarter.found),
+            },
           );
         }
       } else {
-        const sight = await localSight;
-        if (!sight) throw new Error("Could not read that photo.");
-        nextMeal = analyzeFree(
-          sight.labels,
-          restaurant.trim(),
-          [dishHint.trim(), sizeHint].filter(Boolean).join(" "),
-          {
-            caption: sight.caption,
-            portionGrams: sight.portionGrams,
-            quarterFound: sight.quarterFound || quarter.found,
-          },
-        );
+        nextMeal = analyzeFree([], restaurant.trim(), typed);
       }
 
       if (nextMeal.isFood) {
@@ -285,6 +260,7 @@ export function BitewiseApp({ embedded = false }: { embedded?: boolean } = {}) {
         setSizeHint(parsePortionSize(drafted.portionSize, inferMealSize(drafted)));
         setEntryId(null);
         setServings(1);
+        if (!thumbnail) setThumbnail("/nugget.png");
       } else {
         setMeal(nextMeal);
         setConfirming(false);
@@ -487,9 +463,8 @@ export function BitewiseApp({ embedded = false }: { embedded?: boolean } = {}) {
               <em> nuggets, stacks, and plates</em>
             </h1>
             <p className="lede">
-              Drop a real food photo. AI names the dish and toppings. You
-              confirm what is actually there, then it searches nutrition sites
-              and concludes calories.
+              Free for everyone. Type the dish, or snap a photo and confirm.
+              Calories come from published nutrition — no API key to paste.
             </p>
           </div>
           <aside className="hero-aside hide-mobile">
@@ -515,48 +490,10 @@ export function BitewiseApp({ embedded = false }: { embedded?: boolean } = {}) {
         </section>
         )}
 
-        {!visionReady ? (
-          <section className="setup-card">
-            <p className="card-kicker">One-time setup</p>
-            <h2>Add a free Gemini key to identify plates</h2>
-            <p>
-              Vision names the food, then NuggetCals searches USDA and menu
-              pages for calories. Get a free key at{" "}
-              <a
-                href="https://aistudio.google.com/apikey"
-                target="_blank"
-                rel="noreferrer"
-              >
-                aistudio.google.com/apikey
-              </a>
-              , paste it here, or put <code>GEMINI_API_KEY</code> on the server
-              so phones never need to paste one.
-            </p>
-            <label className="field">
-              <span>Gemini API key</span>
-              <input
-                type="password"
-                autoComplete="off"
-                value={keyDraft}
-                onChange={(event) => setKeyDraft(event.target.value)}
-                placeholder="AIza… or gsk_…"
-              />
-            </label>
-            <button
-              type="button"
-              className="analyze"
-              disabled={savingKey || keyDraft.trim().length < 20}
-              onClick={() => void saveGroqKey()}
-            >
-              {savingKey ? "Saving…" : "Save key"}
-            </button>
-          </section>
-        ) : (
-          <p className="hint hide-mobile">
-            Vision AI is on. Identify the plate, look up the size, then estimate
-            calories. Add a quarter next to homemade food for a closer scale.
-          </p>
-        )}
+        <p className="hint">
+          Free for everyone — no API key. Type the restaurant and dish for the
+          best number, or snap a photo and confirm what it guessed.
+        </p>
 
         <section className="workspace">
           <div className="composer">
@@ -630,12 +567,13 @@ export function BitewiseApp({ embedded = false }: { embedded?: boolean } = {}) {
 
             <label className="field">
               <span>
-                What is it? <em>optional · type chicken if that is what you photographed</em>
+                What is it?{" "}
+                <em>type this if you skip the photo · or fix a wrong photo guess</em>
               </span>
               <input
                 value={dishHint}
                 onChange={(event) => setDishHint(event.target.value)}
-                placeholder="grilled chicken, chicken sandwich, bowl…"
+                placeholder="steak burrito, grilled chicken, dragon roll…"
                 maxLength={80}
               />
             </label>
@@ -680,17 +618,24 @@ export function BitewiseApp({ embedded = false }: { embedded?: boolean } = {}) {
             <button
               type="button"
               className="analyze"
-              disabled={busy || !imageBase64}
+              disabled={
+                busy ||
+                (!confirming && !imageBase64 && dishHint.trim().length < 2)
+              }
               onClick={() => void (confirming ? countCalories() : analyze())}
             >
               {busy
                 ? (busyKind === "research" ? RESEARCH_STEPS : IDENTIFY_STEPS)[step]
                 : confirming
                   ? "Count these cals"
-                  : "Identify this plate"}
+                  : imageBase64
+                    ? "Identify this plate"
+                    : "Find this meal"}
             </button>
-            {!imageBase64 ? (
-              <p className="hint">Upload a new photo to analyze. Opening a past scan only shows saved results.</p>
+            {!imageBase64 && !confirming ? (
+              <p className="hint">
+                No photo needed. Type the dish above, or snap one and confirm.
+              </p>
             ) : null}
             {embedded ? null : (
             <p className="hint hide-mobile">

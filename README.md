@@ -12,13 +12,11 @@ NuggetCals photographs a real meal and estimates calories in three steps: identi
 
 Log is one page with four modes: **Photo**, **Snack**, **Homemade**, and **Drink**. **Trends** and **Your Nugget** stay their own tabs. History stays on the device. Download a JSON backup from Trends to keep it across phones.
 
-**Best setup:** add a free Gemini key on the server so phones never paste anything.
+**Free for everyone — no API key required.**
 
-1. Create a key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey).
-2. In Vercel → Project → Settings → Environment Variables, add `GEMINI_API_KEY`.
-3. Redeploy.
+Type the restaurant and dish, or snap a photo and confirm. Calories come from USDA, FatSecret, Open Food Facts, and official menus.
 
-Locally you can put the same key in `.env.local`. Groq still works as a fallback if Gemini is not set.
+Optional: add `GEMINI_API_KEY` or `GROQ_API_KEY` on the server if you want sharper cloud photo ID. The site still works without them.
 
 ## Setup
 

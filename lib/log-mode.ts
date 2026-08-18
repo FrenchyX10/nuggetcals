@@ -9,8 +9,8 @@ export type LogMode = (typeof LOG_MODES)[number]["id"];
 
 export const LOG_COPY: Record<LogMode, string> = {
   photo:
-    "Snap a plate. Confirm the dish and size, then calories come from published nutrition.",
-  snack: "Type a bag or snap the label. Calories come from the published serving.",
+    "Free for everyone — no API key. Type the restaurant and dish, or snap a photo and confirm. Calories come from published nutrition.",
+  snack: "Type a bag name (free). Photo label-reading is optional. Calories come from the published serving.",
   homemade: "Type what you cooked, like 1 egg, 1 bread — or just the calories.",
   drink: "Tap a drink or type one. Regular, diet, coffee, juice, and water.",
 };
