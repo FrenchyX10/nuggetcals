@@ -1,4 +1,4 @@
-import { getVisionAuth } from "@/lib/keys";
+import { resolveVisionAuth, type VisionAuth } from "@/lib/keys";
 import { snackFromFood, searchLocalSnacks, type SnackRecord } from "@/lib/snacks-data";
 
 export const runtime = "nodejs";
@@ -30,8 +30,9 @@ export async function POST(request: Request) {
 
   const typed = readString(body, "query", 80);
   const groqKey = readString(body, "groqKey", 200);
+  const geminiKey = readString(body, "geminiKey", 200);
   const imageBase64 = readString(body, "imageBase64", 12_000_000);
-  const auth = groqKey ? { key: groqKey } : getVisionAuth();
+  const auth = resolveVisionAuth({ groqKey, geminiKey });
 
   let query = typed;
   let identified = "";
@@ -40,13 +41,14 @@ export async function POST(request: Request) {
       return Response.json(
         {
           error: "missing_vision_key",
-          message: "Add a free Groq key to identify a snack photo.",
+          message:
+            "Vision is not configured. Add GEMINI_API_KEY on the server, or paste a free Gemini/Groq key.",
         },
         { status: 401 },
       );
     }
     try {
-      const seen = await identifySnackPhoto(imageBase64, auth.key);
+      const seen = await identifySnackPhoto(imageBase64, auth);
       identified = seen.query;
       query = [seen.query, typed].filter(Boolean).join(" ").trim() || seen.query;
     } catch (error) {
@@ -116,7 +118,29 @@ function queryVariants(query: string) {
   return unique;
 }
 
-async function identifySnackPhoto(imageBase64: string, apiKey: string) {
+const SNACK_VISION_PROMPT =
+  'Identify the packaged snack in the photo. Read the bag or wrapper. Do not invent calories. Reply with JSON only: {"isSnack":true,"query":"brand flavor","notes":"bag size if visible"}';
+
+async function identifySnackPhoto(imageBase64: string, auth: VisionAuth) {
+  const text =
+    auth.provider === "gemini"
+      ? await identifySnackGemini(imageBase64, auth.key)
+      : await identifySnackGroq(imageBase64, auth.key);
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start < 0 || end <= start) throw new Error("Could not read a snack name from that photo.");
+  const parsed = JSON.parse(text.slice(start, end + 1)) as {
+    isSnack?: boolean;
+    query?: string;
+    notes?: string;
+  };
+  if (parsed.isSnack === false) throw new Error("That photo does not look like a packaged snack.");
+  const query = String(parsed.query ?? "").trim();
+  if (query.length < 2) throw new Error("Could not read the bag name. Try a closer photo of the label.");
+  return { query, notes: String(parsed.notes ?? "") };
+}
+
+async function identifySnackGroq(imageBase64: string, apiKey: string) {
   const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -129,11 +153,7 @@ async function identifySnackPhoto(imageBase64: string, apiKey: string) {
       max_completion_tokens: 400,
       reasoning_effort: "none",
       messages: [
-        {
-          role: "system",
-          content:
-            "Identify the packaged snack in the photo. Read the bag or wrapper. Do not invent calories. Reply with JSON only: {\"isSnack\":true,\"query\":\"brand flavor\",\"notes\":\"bag size if visible\"}",
-        },
+        { role: "system", content: SNACK_VISION_PROMPT },
         {
           role: "user",
           content: [
@@ -157,19 +177,43 @@ async function identifySnackPhoto(imageBase64: string, apiKey: string) {
   if (!response.ok) {
     throw new Error(data.error?.message || "Snack photo identification failed.");
   }
-  const text = data.choices?.[0]?.message?.content ?? "";
-  const start = text.indexOf("{");
-  const end = text.lastIndexOf("}");
-  if (start < 0 || end <= start) throw new Error("Could not read a snack name from that photo.");
-  const parsed = JSON.parse(text.slice(start, end + 1)) as {
-    isSnack?: boolean;
-    query?: string;
-    notes?: string;
+  return data.choices?.[0]?.message?.content ?? "";
+}
+
+async function identifySnackGemini(imageBase64: string, apiKey: string) {
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: SNACK_VISION_PROMPT }] },
+        contents: [
+          {
+            role: "user",
+            parts: [
+              {
+                text: "What snack is this? Use the brand and flavor as the search query, e.g. Doritos Cool Ranch or Cheetos Flamin Hot.",
+              },
+              { inlineData: { mimeType: "image/jpeg", data: imageBase64 } },
+            ],
+          },
+        ],
+        generationConfig: {
+          temperature: 0.1,
+          responseMimeType: "application/json",
+        },
+      }),
+    },
+  );
+  const data = (await response.json()) as {
+    error?: { message?: string };
+    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
   };
-  if (parsed.isSnack === false) throw new Error("That photo does not look like a packaged snack.");
-  const query = String(parsed.query ?? "").trim();
-  if (query.length < 2) throw new Error("Could not read the bag name. Try a closer photo of the label.");
-  return { query, notes: String(parsed.notes ?? "") };
+  if (!response.ok) {
+    throw new Error(data.error?.message || "Snack photo identification failed.");
+  }
+  return data.candidates?.[0]?.content?.parts?.map((part) => part.text ?? "").join("") ?? "";
 }
 
 async function searchUsda(query: string): Promise<SnackRecord[]> {

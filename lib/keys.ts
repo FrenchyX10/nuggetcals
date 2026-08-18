@@ -11,6 +11,7 @@ const KEY_NAMES = [
 ] as const;
 
 export type VisionProvider = "groq" | "gemini";
+export type VisionAuth = { provider: VisionProvider; key: string };
 
 function readEnvFile() {
   if (!existsSync(ENV_PATH)) return "";
@@ -25,12 +26,26 @@ export function readNamedKey(name: string) {
   return value || null;
 }
 
-export function getVisionAuth(): { provider: VisionProvider; key: string } | null {
-  const groq = readNamedKey("GROQ_API_KEY");
-  if (groq) return { provider: "groq", key: groq };
+export function getVisionAuth(): VisionAuth | null {
+  // Prefer Gemini as the site key — higher free/paid headroom for meal photos.
   const gemini =
     readNamedKey("GEMINI_API_KEY") ?? readNamedKey("GOOGLE_GENERATIVE_AI_API_KEY");
   if (gemini) return { provider: "gemini", key: gemini };
+  const groq = readNamedKey("GROQ_API_KEY");
+  if (groq) return { provider: "groq", key: groq };
+  return null;
+}
+
+export function resolveVisionAuth(options?: {
+  groqKey?: string;
+  geminiKey?: string;
+}): VisionAuth | null {
+  const server = getVisionAuth();
+  if (server) return server;
+  const gemini = options?.geminiKey?.trim();
+  if (gemini && gemini.length >= 20) return { provider: "gemini", key: gemini };
+  const groq = options?.groqKey?.trim();
+  if (groq && groq.length >= 20) return { provider: "groq", key: groq };
   return null;
 }
 

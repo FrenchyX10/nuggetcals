@@ -12,7 +12,13 @@ NuggetCals photographs a real meal and estimates calories in three steps: identi
 
 Log is one page with four modes: **Photo**, **Snack**, **Homemade**, and **Drink**. **Trends** and **Your Nugget** stay their own tabs. History stays on the device. Download a JSON backup from Trends to keep it across phones.
 
-Add a free Groq key in the app so vision can actually see the plate. Create one at [console.groq.com/keys](https://console.groq.com/keys) — no credit card.
+**Best setup:** add a free Gemini key on the server so phones never paste anything.
+
+1. Create a key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey).
+2. In Vercel → Project → Settings → Environment Variables, add `GEMINI_API_KEY`.
+3. Redeploy.
+
+Locally you can put the same key in `.env.local`. Groq still works as a fallback if Gemini is not set.
 
 ## Setup
 

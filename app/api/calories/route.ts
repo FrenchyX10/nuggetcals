@@ -1,4 +1,4 @@
-import { getVisionAuth } from "@/lib/keys";
+import { getVisionAuth, readNamedKey } from "@/lib/keys";
 import { mealAnalysisSchema } from "@/lib/schema";
 import { enrichCaloriesFromSources } from "@/lib/calorie-lookup";
 
@@ -25,14 +25,18 @@ export async function POST(request: Request) {
     return Response.json({ error: "Send the confirmed meal to look up calories." }, { status: 400 });
   }
 
-  const auth = groqKey
-    ? { provider: "groq" as const, key: groqKey }
-    : getVisionAuth();
+  // Compound web search needs a Groq key; USDA/OFF/FatSecret still run without it.
+  const server = getVisionAuth();
+  const apiKey =
+    groqKey ||
+    (server?.provider === "groq" ? server.key : null) ||
+    readNamedKey("GROQ_API_KEY") ||
+    undefined;
 
   try {
     const meal = await enrichCaloriesFromSources(parsed.data, {
       restaurant,
-      apiKey: auth?.key,
+      apiKey,
     });
     return Response.json({ meal });
   } catch (error) {

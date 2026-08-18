@@ -1,4 +1,4 @@
-import { getVisionAuth } from "@/lib/keys";
+import { resolveVisionAuth } from "@/lib/keys";
 import { analyzeWithFreeVision } from "@/lib/vision-ai";
 
 export const maxDuration = 60;
@@ -20,18 +20,18 @@ export async function POST(request: Request) {
   const localGuess = readString(body, "localGuess", 120);
   const imageBase64 = readString(body, "imageBase64", 12_000_000);
   const groqKey = readString(body, "groqKey", 200);
+  const geminiKey = readString(body, "geminiKey", 200);
   const quarterFound = readBoolean(body, "quarterFound");
   const identifyOnly = readBoolean(body, "identifyOnly");
 
-  const auth = groqKey
-    ? { provider: "groq" as const, key: groqKey }
-    : getVisionAuth();
+  const auth = resolveVisionAuth({ groqKey, geminiKey });
 
   if (!auth || !imageBase64) {
     return Response.json(
       {
         error: "missing_vision_key",
-        message: "Add a free Groq API key to analyze with vision.",
+        message:
+          "Vision is not configured. Add GEMINI_API_KEY on the server, or paste a free Gemini/Groq key.",
       },
       { status: 401 },
     );

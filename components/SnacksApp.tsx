@@ -26,6 +26,7 @@ export function SnacksApp({ embedded = false }: { embedded?: boolean } = {}) {
   const [category, setCategory] = useState<SnackCategory | "all">("all");
   const [servings, setServings] = useState(1);
   const [groqKey, setGroqKey] = useState("");
+  const [serverReady, setServerReady] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [remote, setRemote] = useState<SnackRecord[]>([]);
@@ -40,6 +41,10 @@ export function SnacksApp({ embedded = false }: { embedded?: boolean } = {}) {
     setHistory(loadHistory());
     setPlanCalories(loadPlan().calories);
     setGroqKey(window.localStorage.getItem(GROQ_KEY) ?? "");
+    void fetch("/api/setup")
+      .then((response) => response.json())
+      .then((data: { configured?: boolean }) => setServerReady(Boolean(data.configured)))
+      .catch(() => setServerReady(false));
   }, []);
 
   const today = useMemo(() => todayTotals(history), [history]);
@@ -84,7 +89,7 @@ export function SnacksApp({ embedded = false }: { embedded?: boolean } = {}) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           query: text,
-          groqKey,
+          groqKey: groqKey || undefined,
           imageBase64: imageBase64 ?? "",
         }),
       });
@@ -369,7 +374,7 @@ export function SnacksApp({ embedded = false }: { embedded?: boolean } = {}) {
         <p className="hint snack-foot">
           Showing {remote.length > 0 ? `${shown.length} online matches` : shown.length === SNACKS.length ? "the built-in chip and snack list" : `${shown.length} list matches`}.
           Search now uses USDA FoodData Central and Open Food Facts together
-          {groqKey ? ", plus Groq to read a bag photo" : ""}.
+          {serverReady || groqKey ? ", plus vision to read a bag photo" : ""}.
         </p>
       </main>
 

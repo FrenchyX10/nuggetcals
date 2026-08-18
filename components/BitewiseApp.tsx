@@ -90,6 +90,7 @@ const RESEARCH_STEPS = [
 ];
 
 const GROQ_KEY = "nuggetcals-groq-key";
+const GEMINI_KEY = "nuggetcals-gemini-key";
 
 export function BitewiseApp({ embedded = false }: { embedded?: boolean } = {}) {
   const fileRef = useRef<HTMLInputElement>(null);
@@ -112,8 +113,10 @@ export function BitewiseApp({ embedded = false }: { embedded?: boolean } = {}) {
   const [planId, setPlanId] = useState("maintain");
   const [planCalories, setPlanCalories] = useState(2000);
   const [groqKey, setGroqKey] = useState("");
+  const [geminiKey, setGeminiKey] = useState("");
   const [keyDraft, setKeyDraft] = useState("");
   const [savingKey, setSavingKey] = useState(false);
+  const [serverReady, setServerReady] = useState(false);
   const [sizeHint, setSizeHint] = useState<PortionSize | "">("");
   const [code, setCode] = useState("");
   const [codeNote, setCodeNote] = useState<string | null>(null);
@@ -125,8 +128,12 @@ export function BitewiseApp({ embedded = false }: { embedded?: boolean } = {}) {
     const plan = loadPlan();
     setPlanId(plan.id);
     setPlanCalories(plan.calories);
-    const stored = window.localStorage.getItem(GROQ_KEY) ?? "";
-    setGroqKey(stored);
+    setGroqKey(window.localStorage.getItem(GROQ_KEY) ?? "");
+    setGeminiKey(window.localStorage.getItem(GEMINI_KEY) ?? "");
+    void fetch("/api/setup")
+      .then((response) => response.json())
+      .then((data: { configured?: boolean }) => setServerReady(Boolean(data.configured)))
+      .catch(() => setServerReady(false));
   }, []);
 
   useEffect(() => {
@@ -143,24 +150,31 @@ export function BitewiseApp({ embedded = false }: { embedded?: boolean } = {}) {
   const usedShare = Math.min(1, today.calories / Math.max(planCalories, 1));
   const activeEntry = history.find((item) => item.id === entryId) ?? null;
   const scale = activeEntry?.servings ?? servings;
+  const visionReady = serverReady || Boolean(groqKey) || Boolean(geminiKey);
 
   async function saveGroqKey() {
     const value = keyDraft.trim();
     if (value.length < 20) {
-      setError("Paste the full Groq key. It is free — no credit card.");
+      setError("Paste the full API key.");
       return;
     }
+    const isGemini = value.startsWith("AIza") || !value.startsWith("gsk_");
     setSavingKey(true);
     setError(null);
     try {
-      window.localStorage.setItem(GROQ_KEY, value);
-      setGroqKey(value);
+      if (isGemini) {
+        window.localStorage.setItem(GEMINI_KEY, value);
+        setGeminiKey(value);
+      } else {
+        window.localStorage.setItem(GROQ_KEY, value);
+        setGroqKey(value);
+      }
       setKeyDraft("");
       await fetch("/api/setup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ groqKey: value }),
-      });
+        body: JSON.stringify(isGemini ? { geminiKey: value } : { groqKey: value }),
+      }).catch(() => null);
     } finally {
       setSavingKey(false);
     }
@@ -210,7 +224,7 @@ export function BitewiseApp({ embedded = false }: { embedded?: boolean } = {}) {
       const quarter = await detectQuarterScale(previewUrl);
       let nextMeal: MealAnalysis | null = null;
 
-      if (groqKey) {
+      if (visionReady) {
         const [response, sight] = await Promise.all([
           fetch("/api/analyze", {
             method: "POST",
@@ -220,7 +234,8 @@ export function BitewiseApp({ embedded = false }: { embedded?: boolean } = {}) {
               restaurant: restaurant.trim(),
               dishHint: dishHint.trim(),
               sizeHint,
-              groqKey,
+              groqKey: groqKey || undefined,
+              geminiKey: geminiKey || undefined,
               quarterFound: quarter.found,
               identifyOnly: true,
               localGuess: (await localSight)?.caption ?? "",
@@ -389,24 +404,22 @@ export function BitewiseApp({ embedded = false }: { embedded?: boolean } = {}) {
     setError(null);
     try {
       let nextMeal = meal;
-      if (groqKey) {
-        const response = await fetch("/api/calories", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            meal,
-            restaurant: restaurant.trim(),
-            groqKey,
-          }),
-        });
-        const data = (await response.json()) as
-          | { meal: MealAnalysis }
-          | { error: string };
-        if (!response.ok || !("meal" in data)) {
-          throw new Error("error" in data ? data.error : "Calorie lookup failed.");
-        }
-        nextMeal = data.meal;
+      const response = await fetch("/api/calories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          meal,
+          restaurant: restaurant.trim(),
+          groqKey: groqKey || undefined,
+        }),
+      });
+      const data = (await response.json()) as
+        | { meal: MealAnalysis }
+        | { error: string };
+      if (!response.ok || !("meal" in data)) {
+        throw new Error("error" in data ? data.error : "Calorie lookup failed.");
       }
+      nextMeal = data.meal;
       setMeal(nextMeal);
       setConfirming(false);
       const id = crypto.randomUUID();
@@ -502,28 +515,31 @@ export function BitewiseApp({ embedded = false }: { embedded?: boolean } = {}) {
         </section>
         )}
 
-        {!groqKey ? (
+        {!visionReady ? (
           <section className="setup-card">
             <p className="card-kicker">One-time setup</p>
-            <h2>Add your free Groq key to start identifying plates</h2>
+            <h2>Add a free Gemini key to identify plates</h2>
             <p>
-              NuggetCals uses Groq vision to name the food, then searches
-              several nutrition sites and concludes calories. The key is free
-              and does not need a credit card.
-              Create one at{" "}
-              <a href="https://console.groq.com/keys" target="_blank" rel="noreferrer">
-                console.groq.com/keys
+              Vision names the food, then NuggetCals searches USDA and menu
+              pages for calories. Get a free key at{" "}
+              <a
+                href="https://aistudio.google.com/apikey"
+                target="_blank"
+                rel="noreferrer"
+              >
+                aistudio.google.com/apikey
               </a>
-              , then paste it here.
+              , paste it here, or put <code>GEMINI_API_KEY</code> on the server
+              so phones never need to paste one.
             </p>
             <label className="field">
-              <span>Groq API key</span>
+              <span>Gemini API key</span>
               <input
                 type="password"
                 autoComplete="off"
                 value={keyDraft}
                 onChange={(event) => setKeyDraft(event.target.value)}
-                placeholder="gsk_..."
+                placeholder="AIza… or gsk_…"
               />
             </label>
             <button
