@@ -157,27 +157,29 @@ export const FAMILY_VARIANTS: FamilyVariant[] = [
   v("Baked ziti", "pasta", ["ziti"], 620, 26, 68, 24, 5, 10, 1100, 380, "plate", false),
 
   v("Garden salad", "salad", ["green salad", "side salad", "house salad"], 150, 4, 12, 10, 4, 5, 220, 200, "bowl", false),
-  v("Caesar salad", "salad", ["caesar no chicken"], 290, 8, 16, 22, 2, 2, 680, 220, "bowl", false),
-  v("Caesar salad with chicken", "salad", ["chicken caesar"], 470, 32, 18, 30, 3, 3, 980, 300, "bowl", false),
+  v("Caesar salad", "salad", ["caesar", "caesar salad", "caesar no chicken"], 290, 8, 16, 22, 2, 2, 680, 220, "bowl", false),
+  v("Caesar salad with chicken", "salad", ["chicken caesar", "caesar salad with chicken"], 470, 32, 18, 30, 3, 3, 980, 300, "bowl", false),
   v("Cobb salad", "salad", ["cobb"], 580, 36, 16, 40, 4, 4, 1100, 360, "bowl", false),
   v("Greek salad", "salad", ["greek"], 320, 10, 14, 24, 4, 6, 780, 280, "bowl", false),
   v("Chef salad", "salad", ["chef salad"], 420, 28, 14, 28, 3, 4, 980, 320, "bowl", false),
   v("Southwest chicken salad", "salad", ["southwest salad", "taco salad"], 540, 34, 36, 28, 8, 6, 1200, 380, "bowl", false),
 
-  v("Beef taco", "taco", ["ground beef taco", "hard shell taco"], 210, 9, 21, 10, 3, 1, 350, 100, "taco", true),
-  v("Chicken taco", "taco", ["chicken street taco"], 180, 12, 16, 8, 2, 1, 320, 95, "taco", true),
+  v("Taco", "taco", ["taco", "street taco"], 200, 11, 18, 9, 2, 1, 340, 100, "taco", true),
+  v("Beef taco", "taco", ["ground beef taco", "hard shell taco", "beef taco"], 210, 9, 21, 10, 3, 1, 350, 100, "taco", true),
+  v("Chicken taco", "taco", ["chicken street taco", "chicken taco"], 180, 12, 16, 8, 2, 1, 320, 95, "taco", true),
   v("Steak taco", "taco", ["carne asada taco", "asada taco"], 220, 14, 16, 10, 2, 1, 340, 100, "taco", true),
   v("Carnitas taco", "taco", ["pork taco", "carnitas"], 210, 12, 16, 10, 2, 1, 360, 100, "taco", true),
   v("Al pastor taco", "taco", ["pastor taco"], 200, 11, 17, 9, 2, 2, 350, 98, "taco", true),
   v("Fish taco", "taco", ["fish taco", "baja fish taco"], 230, 12, 22, 10, 2, 2, 380, 120, "taco", true),
   v("Shrimp taco", "taco", ["shrimp taco"], 190, 12, 18, 8, 2, 1, 360, 100, "taco", true),
 
+  v("Burrito", "burrito", ["burrito", "stuffed burrito"], 900, 40, 90, 32, 10, 4, 1900, 450, "burrito", false),
   v("Chicken burrito", "burrito", ["chicken burrito"], 1050, 48, 96, 38, 11, 4, 2100, 480, "burrito", false),
   v("Steak burrito", "burrito", ["steak burrito"], 1100, 50, 94, 40, 11, 4, 2200, 500, "burrito", false),
   v("Beef burrito", "burrito", ["beef burrito"], 1100, 50, 94, 40, 11, 4, 2200, 500, "burrito", false),
-  v("Bean burrito", "burrito", ["bean and cheese burrito"], 680, 22, 92, 22, 14, 4, 1600, 400, "burrito", false),
-  v("Carnitas burrito", "burrito", ["pork burrito"], 1100, 46, 94, 44, 11, 4, 2200, 500, "burrito", false),
-  v("Breakfast burrito", "burrito", ["egg burrito"], 780, 32, 72, 36, 8, 4, 1700, 400, "burrito", false),
+  v("Bean burrito", "burrito", ["bean and cheese burrito", "bean burrito"], 680, 22, 92, 22, 14, 4, 1600, 400, "burrito", false),
+  v("Carnitas burrito", "burrito", ["pork burrito", "carnitas burrito"], 1100, 46, 94, 44, 11, 4, 2200, 500, "burrito", false),
+  v("Breakfast burrito", "burrito", ["egg burrito", "breakfast burrito"], 780, 32, 72, 36, 8, 4, 1700, 400, "burrito", false),
 
   v("Chicken bowl", "bowl", ["chicken burrito bowl", "chicken rice bowl"], 620, 42, 68, 18, 10, 4, 1400, 450, "bowl", false),
   v("Steak bowl", "bowl", ["steak burrito bowl", "steak rice bowl"], 650, 42, 64, 22, 10, 4, 1400, 470, "bowl", false),
@@ -640,7 +642,19 @@ export function matchFamilyVariant(
     if (!best || score > best.score) best = { variant, score };
   }
   if (best && best.score >= 3) return best.variant;
-  return pool[0] ?? FAMILY_VARIANTS[0];
+  // Prefer the generic family row (first in each family list) over a random protein.
+  const generic = pool.find((item) => {
+    const name = normalize(item.name);
+    return (
+      name === family ||
+      name === "burrito" ||
+      name === "taco" ||
+      name === "garden salad" ||
+      name === "hamburger" ||
+      name === "pizza slice cheese"
+    );
+  });
+  return generic ?? pool[0] ?? FAMILY_VARIANTS[0];
 }
 
 export function shouldMultiplyByCount(

@@ -16,6 +16,11 @@ import {
   sizeScaleFor,
   type PortionSize,
 } from "@/lib/portion-size";
+import { detectFoodFamily, matchFamilyVariant } from "@/lib/food-families";
+import {
+  looksLikeSushi,
+  resolveSushiPieceCount,
+} from "@/lib/sushi";
 
 export type FoodLabel = {
   label: string;
@@ -56,25 +61,39 @@ export function analyzeFree(
     return emptyMeal("This photo does not look like a meal.");
   }
 
-  const picked = pickMeal(ranked, matchedChain, labels);
-  if (picked.length === 0 && matchedChain) {
-    const signature = FOODS.filter((item) => item.restaurant === matchedChain).slice(
-      0,
-      1,
-    );
-    if (signature[0]) picked.push({ record: signature[0], score: 0.25 });
+  const picked = pickMeal(ranked, matchedChain, labels, dishHint);
+  if (picked.length === 0 && matchedChain && dishHint.trim()) {
+    const menuHit = menuFor(matchedChain)
+      .map((record) => ({
+        record,
+        score: hintAdjustment(record, dishHint, labels),
+      }))
+      .sort((a, b) => b.score - a.score)[0];
+    if (menuHit && menuHit.score > 0.25) picked.push(menuHit);
   }
 
   if (picked.length === 0) {
     return emptyMeal(
-      "Could not tell what food this is. Try a closer photo, or type the restaurant.",
+      "Could not tell what food this is. Type the dish name, or try a closer photo.",
     );
   }
 
   const size = parsePortionSize(
     `${options.caption ?? ""} ${dishHint} ${labels.map((item) => item.label).join(" ")}`,
   );
-  const items = picked.map(({ record, score }, index) =>
+  const identityBlob = `${dishHint} ${options.caption ?? ""} ${labels.map((item) => item.label).join(" ")} ${picked[0].record.name}`;
+  const family = detectFoodFamily(identityBlob);
+  if (family && !matchedChain) {
+    const variant = matchFamilyVariant(picked[0].record.name, proteinTokens(dishHint), family);
+    const familyRecord = FOODS.find(
+      (food) => !food.restaurant && normalizeName(food.name) === normalizeName(variant.name),
+    );
+    if (familyRecord && normalizeName(familyRecord.name) !== normalizeName(picked[0].record.name)) {
+      picked[0] = { record: familyRecord, score: Math.max(picked[0].score, 0.62) };
+    }
+  }
+
+  let items = picked.map(({ record, score }, index) =>
     toItem(
       pickSizedRecord(record, size, matchedChain),
       score,
@@ -84,6 +103,82 @@ export function analyzeFree(
       size,
     ),
   );
+
+  if (looksLikeSushi(identityBlob) || /\bsushi|sashimi|nigiri|maki|roll\b/i.test(picked[0].record.name)) {
+    const pieces = resolveSushiPieceCount({
+      name: picked[0].record.name,
+      notes: identityBlob,
+      reported: size === "small" ? 6 : size === "large" ? 12 : 8,
+    });
+    items = items.map((item, index) => {
+      if (index !== 0) return item;
+      const alreadyFull =
+        /\b8 pieces\b|\b\(8/i.test(item.name) ||
+        /×|x\s*\d|\d+\s*pieces?/i.test(`${item.portionDescription} ${item.notes}`);
+      const isPerPiece = /piece|nigiri|sashimi|platter/i.test(`${item.name} ${item.portionDescription}`);
+      if (alreadyFull || !isPerPiece || pieces <= 1) {
+        return {
+          ...item,
+          portionDescription: `${pieces} pieces · ${item.portionDescription}`.slice(0, 80),
+          notes: `${item.notes} Counted about ${pieces} pieces from the plate size.`.slice(0, 180),
+        };
+      }
+      return {
+        ...item,
+        calories: Math.round(item.calories * pieces),
+        proteinG: round1(item.proteinG * pieces),
+        carbsG: round1(item.carbsG * pieces),
+        fatG: round1(item.fatG * pieces),
+        fiberG: round1(item.fiberG * pieces),
+        sugarG: round1(item.sugarG * pieces),
+        sodiumMg: Math.round(item.sodiumMg * pieces),
+        estimatedGrams: Math.round(item.estimatedGrams * pieces),
+        portionDescription: `${pieces} pieces`.slice(0, 80),
+        notes: `${item.notes} ${Math.round(item.calories)} kcal × ${pieces} pieces.`.slice(0, 180),
+      };
+    });
+  } else if (
+    family === "taco" ||
+    family === "wings" ||
+    family === "pizza" ||
+    /\btacos?\b/i.test(identityBlob)
+  ) {
+    const count =
+      family === "pizza"
+        ? size === "small"
+          ? 1
+          : size === "large"
+            ? 3
+            : 2
+        : family === "wings"
+          ? size === "small"
+            ? 6
+            : size === "large"
+              ? 12
+              : 8
+          : size === "small"
+            ? 2
+            : size === "large"
+              ? 4
+              : 3;
+    const perUnit = /taco|wing|slice|piece/i.test(`${items[0]?.name} ${items[0]?.portionDescription}`);
+    if (perUnit && count > 1 && items[0]) {
+      const item = items[0];
+      items[0] = {
+        ...item,
+        calories: Math.round(item.calories * count),
+        proteinG: round1(item.proteinG * count),
+        carbsG: round1(item.carbsG * count),
+        fatG: round1(item.fatG * count),
+        fiberG: round1(item.fiberG * count),
+        sugarG: round1(item.sugarG * count),
+        sodiumMg: Math.round(item.sodiumMg * count),
+        estimatedGrams: Math.round(item.estimatedGrams * count),
+        portionDescription: `${count} ${family === "pizza" ? "slices" : family === "wings" ? "wings" : "tacos"}`,
+        notes: `${item.notes} Counted ${count} from plate size.`.slice(0, 180),
+      };
+    }
+  }
   const totals = sumItems(items);
   const bestScore = picked[0]?.score ?? 0.3;
   const method = matchedChain
@@ -291,7 +386,52 @@ function hintAdjustment(
   const isAcai = /\b(acai|açaí|smoothie bowl)\b/.test(blob);
   if (wantsAcai && isAcai) extra += 0.7;
   if (wantsAcai && /\b(chicken|steak|burrito)\b/.test(blob)) extra -= 0.9;
+
+  // Vague “burrito/taco/salad” should not lock onto a random protein SKU.
+  const proteinInHint = proteinTokens(hint).length > 0;
+  if (/\bburrito\b/.test(hint) && !proteinInHint) {
+    if (normalizeName(record.name) === "burrito") extra += 0.85;
+    if (/\b(chicken|steak|beef|carnitas|pork)\b/.test(blob) && !/\bbean|breakfast|egg\b/.test(blob)) {
+      extra -= 0.6;
+    }
+  }
+  if (/\btacos?\b/.test(hint) && !proteinInHint) {
+    if (normalizeName(record.name) === "taco") extra += 0.8;
+    if (/\b(chicken|steak|beef|fish|shrimp|carnitas)\b/.test(blob)) extra -= 0.55;
+  }
+  if (/\bsalad\b/.test(hint) && !/\b(chicken|cobb|caesar|greek|chef|southwest)\b/.test(hint)) {
+    if (normalizeName(record.name) === "garden salad") extra += 0.7;
+    if (/\bchicken|cobb|southwest\b/.test(blob)) extra -= 0.45;
+  }
+  if (/\bcaesar\b/.test(hint) && !/\bchicken\b/.test(hint)) {
+    if (normalizeName(record.name) === "caesar salad") extra += 0.75;
+    if (/\bchicken\b/.test(blob)) extra -= 0.7;
+  }
+  if (/\b(sushi|sashimi|nigiri|platter)\b/.test(hint)) {
+    if (/\bmixed sushi piece|sushi platter\b/.test(blob)) extra += 0.55;
+  }
   return extra;
+}
+
+function proteinTokens(text: string) {
+  const hint = normalizeName(text);
+  return [
+    "chicken",
+    "steak",
+    "beef",
+    "pork",
+    "carnitas",
+    "bean",
+    "sofritas",
+    "fish",
+    "shrimp",
+    "egg",
+    "breakfast",
+    "tofu",
+    "turkey",
+    "al pastor",
+    "pastor",
+  ].filter((token) => hint.includes(token));
 }
 
 export function suggestAlternatives(
@@ -346,13 +486,20 @@ function pickMeal(
   ranked: { record: FoodRecord; score: number }[],
   restaurant: string | null,
   labels: FoodLabel[],
+  dishHint = "",
 ) {
   const labelText = labels.map((item) => normalizeName(item.label)).join(" ");
+  const hint = normalizeName(dishHint);
   const mentionedSide = SIDES.some((group) =>
-    group.some((word) => labelText.includes(word)),
+    group.some((word) => labelText.includes(word) || hint.includes(word)),
   );
+  const preferred = ranked.filter((candidate) => {
+    if (!restaurant) return true;
+    return !candidate.record.restaurant || candidate.record.restaurant === restaurant;
+  });
+  const pool = preferred.length > 0 ? preferred : ranked;
   const picked: { record: FoodRecord; score: number }[] = [];
-  for (const candidate of ranked) {
+  for (const candidate of pool) {
     if (picked.length === 0) {
       picked.push(candidate);
       continue;

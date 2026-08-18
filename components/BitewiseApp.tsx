@@ -248,6 +248,14 @@ export function BitewiseApp({ embedded = false }: { embedded?: boolean } = {}) {
               quarterFound: Boolean(sight?.quarterFound || quarter.found),
             },
           );
+          if (sight) {
+            nextMeal = applyLocalIdentityGuard(
+              nextMeal,
+              sight,
+              restaurant.trim(),
+              dishHint.trim(),
+            );
+          }
         }
       } else {
         nextMeal = analyzeFree([], restaurant.trim(), typed);

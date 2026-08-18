@@ -303,9 +303,9 @@ async function enrichItem(
     ? await concludeEstimate(query, size, hits, apiKey, item.name, band).catch(() =>
         medianConsensus(hits),
       )
-    : medianConsensus(hits);
+    : preferAnchorOrMedian(hits, fallback, item.name);
   if (!inCalorieBand(picked.calories, band)) {
-    picked = medianConsensus(hits);
+    picked = preferAnchorOrMedian(hits, fallback, item.name);
   }
   if (!inCalorieBand(picked.calories, band) && fallback) {
     picked = {
@@ -315,6 +315,34 @@ async function enrichItem(
   }
 
   return finishItem(item, picked, pieces, size, hits.length);
+}
+
+function preferAnchorOrMedian(
+  hits: CalorieHit[],
+  fallback: Concluded | null,
+  itemName: string,
+): Concluded {
+  const median = medianConsensus(hits);
+  if (!fallback) return median;
+  if (hits.length < 2) return fallback;
+  const values = hits.map((hit) => hit.calories).sort((a, b) => a - b);
+  const spread = values[values.length - 1]! - values[0]!;
+  // When public sources disagree a lot, trust the built-in identity table.
+  if (spread > Math.max(180, fallback.calories * 0.35)) {
+    return {
+      ...fallback,
+      reason: `Sources disagreed on ${itemName}. Kept the typical published serving for that dish.`,
+    };
+  }
+  const exactNameHits = hits.filter((hit) =>
+    normalizeLoose(hit.name).includes(normalizeLoose(itemName)),
+  );
+  if (exactNameHits.length >= 2) return medianConsensus(exactNameHits);
+  return median;
+}
+
+function normalizeLoose(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 }
 
 function finishItem(
